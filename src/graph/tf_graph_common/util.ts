@@ -252,13 +252,13 @@ import * as _ from 'lodash';
     let index = 0;
     let largestIndex = 0;
     // Find the shortest name across all strings.
-    let minLength:number|undefined = _.min(_.map(strings, str => str.length));
+    let minLength:number|undefined = _.min(_.map(strings, (str:string) => str.length));
     if (!minLength)
       minLength = 100;
     while (true) {
       index++;
-      let prefixes = _.map(strings, str => str.substring(0, index));
-      let allTheSame = prefixes.every((prefix, i) => {
+      let prefixes = _.map(strings, (str:string) => str.substring(0, index));
+      let allTheSame = prefixes.every((prefix:string, i:number) => {
         return (i === 0 ? true : prefix === prefixes[i - 1]);
       });
       if (allTheSame) {
@@ -272,7 +272,7 @@ import * as _ from 'lodash';
         break;
       }
     }
-    return _.map(strings, str => str.substring(largestIndex));
+    return _.map(strings, (str:string) => str.substring(largestIndex));
   }
 
   
