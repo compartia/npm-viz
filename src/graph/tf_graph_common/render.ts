@@ -15,7 +15,14 @@ limitations under the License.
 /**
  * Package for the Render Hierarchy for TensorFlow graph.
  */
-module tf.graph.render {
+
+import { BridgeNode, EllipsisNode, EllipsisNodeImpl, GraphType, GroupNode, InclusionType, Metaedge, Metanode, Node, NodeType, OpNode, createGraph, getHierarchicalPath } from './graph';
+import * as hierarchy from './hierarchy';
+import * as edge from './edge';
+import * as graph from './graph';
+import * as util from './util';
+import * as d3 from 'd3';
+import * as _ from 'lodash';
 
 export type Point = {x: number, y: number};
 
@@ -80,7 +87,7 @@ export let SeriesNodeColors = {
  * Function that computes edge thickness in pixels.
  */
 export interface EdgeThicknessFunction {
-  (edgeData: scene.edge.EdgeData, edgeClass: string): number;
+  (edgeData: edge.EdgeData, edgeClass: string): number;
 }
 
 /**
@@ -92,7 +99,7 @@ export interface EdgeThicknessFunction {
  * its baseEdgeList property.
  */
 export interface EdgeLabelFunction {
-  (metaedge: Metaedge, renderInfo: render.RenderGraphInfo): string;
+  (metaedge: Metaedge, renderInfo: RenderGraphInfo): string;
 }
 
 /**
@@ -183,7 +190,7 @@ const PARAMS = {
  * __function_library__foo_deadb00f_42.
  */
 const nodeDisplayNameRegex = new RegExp(
-    '^(?:' + tf.graph.FUNCTION_LIBRARY_NODE_PREFIX +
+    '^(?:' + graph.FUNCTION_LIBRARY_NODE_PREFIX +
         ')?(\\w+)_[a-z0-9]{8}(?:_\\d+)?$');
 
 /**
@@ -273,10 +280,10 @@ export class RenderGraphInfo {
         .range(PARAMS.minMaxColors);
 
     this.edgeWidthSizedBasedScale = this.hierarchy.hasShapeInfo ?
-      scene.edge.EDGE_WIDTH_SIZE_BASED_SCALE :
+      edge.EDGE_WIDTH_SIZE_BASED_SCALE :
       d3.scaleLinear()
         .domain([1, this.hierarchy.maxMetaEdgeSize])
-        .range([scene.edge.MIN_EDGE_WIDTH, scene.edge.MAX_EDGE_WIDTH]);
+        .range([edge.MIN_EDGE_WIDTH, edge.MAX_EDGE_WIDTH]);
   }
 
   /**
@@ -335,12 +342,12 @@ export class RenderGraphInfo {
 
     // We only fade nodes when we're displaying stats.
     renderInfo.isFadedOut = this.displayingStats &&
-        !tf.graph.util.hasDisplayableNodeStats(node.stats);
+        !util.hasDisplayableNodeStats(node.stats);
 
     if (node.isGroupNode) {
       // Make a list of tuples (device, proportion), where proportion
       // is the fraction of op nodes that have that device.
-      let pairs = _.pairs((<GroupNode>node).deviceHistogram);
+      let pairs = _.toPairs((<GroupNode>node).deviceHistogram);
       if (pairs.length > 0) {
         // Compute the total # of devices.
         let numDevices = _.sum(pairs, _.last);
@@ -569,7 +576,7 @@ export class RenderGraphInfo {
       oldPrefix: string,
       newPrefix: string,
       functionOutputIndexToNode: {[key: string]: Node}): Metanode {
-    const newMetanode = tf.graph.createMetanode(
+    const newMetanode = graph.createMetanode(
         libraryMetanode.name.replace(oldPrefix, newPrefix));
 
     // Copy over various properties.
@@ -812,7 +819,7 @@ export class RenderGraphInfo {
           return;
         }
 
-        if (childName.indexOf(tf.graph.FUNCTION_LIBRARY_NODE_PREFIX) === 0) {
+        if (childName.indexOf(graph.FUNCTION_LIBRARY_NODE_PREFIX) === 0) {
           // Do not replace library functions in the graph. The library
           // functions serve as templates for other nodes.
           return;
@@ -891,7 +898,7 @@ export class RenderGraphInfo {
       this.buildSubhierarchiesForNeededFunctions(metagraph);
     }
 
-    if (nodeName === tf.graph.ROOT_NAME) {
+    if (nodeName === graph.ROOT_NAME) {
       // Add all metanodes representing library function templates into the
       // library function scene group for the root node.
       _.forOwn(
@@ -1294,19 +1301,19 @@ export class RenderGraphInfo {
       let renderMetaedgeInfo = new RenderMetaedgeInfo(metaedge);
       _.forEach(renderMetaedgeInfo.metaedge.baseEdgeList,
           baseEdge => {
-        const sourcePathList = baseEdge.v.split(tf.graph.NAMESPACE_DELIM);
+        const sourcePathList = baseEdge.v.split(graph.NAMESPACE_DELIM);
 
         for (let i = sourcePathList.length; i >= 0; i--) {
           const fromBeginningPathList = sourcePathList.slice(0, i);
           const node = this.hierarchy.node(
-              fromBeginningPathList.join(tf.graph.NAMESPACE_DELIM));
+              fromBeginningPathList.join(graph.NAMESPACE_DELIM));
           if (node) {
             if (node.type === NodeType.OP &&
                 this.hierarchy.libraryFunctions[(node as OpNode).op]) {
               for (let j = 1; j < fromBeginningPathList.length; j++) {
                 // Expand all hierarchies including the parent.
                 const currentNodeName = fromBeginningPathList
-                    .slice(0, j).join(tf.graph.NAMESPACE_DELIM);
+                    .slice(0, j).join(graph.NAMESPACE_DELIM);
                 if (!currentNodeName) {
                   continue;
                 }
@@ -1453,7 +1460,7 @@ export class AnnotationList {
       return;
     }
 
-    let ellipsisNode = new tf.graph.EllipsisNodeImpl(1);
+    let ellipsisNode = new graph.EllipsisNodeImpl(1);
     this.list.push(new Annotation(ellipsisNode,
         new RenderNodeInfo(ellipsisNode), null,
         AnnotationType.ELLIPSIS, annotation.isIn));
@@ -1630,7 +1637,7 @@ export class RenderNodeInfo {
     // Only use the portion beyond the last delimiter as the display
     // name.
     this.displayName = node.name.substring(
-        node.name.lastIndexOf(tf.graph.NAMESPACE_DELIM) + 1);
+        node.name.lastIndexOf(graph.NAMESPACE_DELIM) + 1);
 
     if (node.type === NodeType.META &&
         (node as Metanode).associatedFunction) {
@@ -1649,12 +1656,12 @@ export class RenderNodeInfo {
         // common scenario.
         this.displayName = match[1];
       } else if (_.startsWith(
-          this.displayName, tf.graph.FUNCTION_LIBRARY_NODE_PREFIX)) {
+          this.displayName, graph.FUNCTION_LIBRARY_NODE_PREFIX)) {
         // The string does not match the usual pattern for how functions are
         // named. Just use the entire second portion of the string as the name
         // if we can successfully remove the prefix.
         this.displayName = this.displayName.substring(
-            tf.graph.FUNCTION_LIBRARY_NODE_PREFIX.length);
+            graph.FUNCTION_LIBRARY_NODE_PREFIX.length);
       }
     }
   }
@@ -1703,7 +1710,7 @@ export class RenderMetaedgeInfo {
 
   /**
    * X and Y coordinate pairs of the points in the path of the edge.
-   * @see tf.graph.node.subsceneAdjustPaths
+   * @see graph.node.subsceneAdjustPaths
    */
   points: Point[];
 
@@ -1934,7 +1941,7 @@ function extractSpecifiedNodes(renderNode: RenderGroupNodeInfo) {
   _.each(graph.nodes(), n => {
     let renderInfo = graph.node(n);
     if (renderInfo.node.include === InclusionType.EXCLUDE &&
-        !n.startsWith(tf.graph.FUNCTION_LIBRARY_NODE_PREFIX)) {
+        !n.startsWith(graph.FUNCTION_LIBRARY_NODE_PREFIX)) {
       // Move the node if the node is excluded and not part of the library
       // function scene group, which contains nodes that do not represent ops in
       // the graph and should thus never have its nodes added to the core graph.
@@ -1982,8 +1989,8 @@ function extractHighInOrOutDegree(renderNode: RenderGroupNodeInfo) {
 
   // Create mappings from node to in and out degrees. Count the number of valid
   // nodes along the way.
-  let nodeToInDegree = {};
-  let nodeToOutDegree = {};
+  let nodeToInDegree:{[key:string]:number} = {};
+  let nodeToOutDegree:{[key:string]:number} = {};
   let validNodeCount = 0;
   _.each(graph.nodes(), currentNode => {
     if (graph.node(currentNode).node.include !== InclusionType.UNSPECIFIED) {
@@ -2205,13 +2212,13 @@ function extractHighDegrees(renderNode: RenderGroupNodeInfo) {
  *     output slot index (such as :0), while the node name lacks that suffix.
  */
 export function expandUntilNodeIsShown(
-    scene, renderHierarchy, tensorName: string) {
+    scene:any, renderHierarchy:any, tensorName: string) {
   const splitTensorName = tensorName.split('/');
 
   // Graph names do not take into account the output slot. Strip it.
-  const lastNodeNameMatch =
+  const lastNodeNameMatch:RegExpMatchArray|null =
       splitTensorName[splitTensorName.length - 1].match(/(.*):\w+/);
-  if (lastNodeNameMatch.length === 2) {
+  if (lastNodeNameMatch && lastNodeNameMatch.length === 2) {
     splitTensorName[splitTensorName.length - 1] = lastNodeNameMatch[1];
   }
 
@@ -2219,7 +2226,7 @@ export function expandUntilNodeIsShown(
   let renderNode = renderHierarchy.getRenderNodeByName(nodeName);
   for (let i = 1; i < splitTensorName.length; i++) {
     // Op nodes are not expandable.
-    if (renderNode.node.type === tf.graph.NodeType.OP) {
+    if (renderNode.node.type ===  graph.NodeType.OP) {
       break;
     }
     renderHierarchy.buildSubhierarchy(nodeName);
@@ -2231,5 +2238,3 @@ export function expandUntilNodeIsShown(
 
   return renderNode.node.name;
 }
-
-} // close module tf.graph.render
