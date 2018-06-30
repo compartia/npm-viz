@@ -15,7 +15,15 @@ limitations under the License.
 /**
  * Package for the Graph Hierarchy for TensorFlow graph.
  */
-module tf.graph.hierarchy {
+import * as _ from 'lodash';
+import * as d3 from 'd3';
+import * as graph from './graph';
+import * as template from './template';
+import * as util from './util';
+import { ProgressTracker } from './common';
+import { SeriesNode, Metaedge, OpNode, GroupNode, getSeriesNodeName, createSeriesNode, Metanode, NodeStats, SlimGraph, NodeType, SeriesGroupingType, FUNCTION_LIBRARY_NODE_PREFIX, ROOT_NAME, createMetanode, MetaedgeImpl, GraphType, createGraph, createMetaedge, getHierarchicalPath, Node } from './graph';
+import { StepStats } from './proto';
+ 
 
 /**
  * Class used as output for getPredecessors and getSuccessors methods
@@ -53,11 +61,11 @@ export interface Hierarchy {
   getNodeMap(): {[nodeName: string]: GroupNode|OpNode};
   node(name: string): GroupNode|OpNode;
   setNode(name: string, node: GroupNode|OpNode): void;
-  getBridgegraph(nodeName: string): graphlib.Graph<GroupNode|OpNode, Metaedge>;
+  getBridgegraph(nodeName: string): graphlib.Graph<GroupNode|OpNode, Metaedge> | null;
   getPredecessors(nodeName: string): Edges;
   getSuccessors(nodeName: string): Edges;
-  getTopologicalOrdering(nodeName: string): { [childName: string]: number };
-  getTemplateIndex(): (string) => number;
+  getTopologicalOrdering(nodeName: string): { [childName: string]: number } | null;
+  getTemplateIndex(): (string:string) => number;
 }
 
 /**
@@ -85,8 +93,9 @@ class HierarchyImpl implements Hierarchy {
     this.graphOptions.compound = true;
     this.root = createMetanode(ROOT_NAME, this.graphOptions);
     this.libraryFunctions = {};
-    this.templates = null;
-    this.devices = null;
+    this.templates = {};
+    this.devices = [];
+    this.xlaClusters=[];
     /**
      * @type {Object} Dictionary object that maps node name to the node
      * (could be op-node, metanode, or series-node)
@@ -114,7 +123,7 @@ class HierarchyImpl implements Hierarchy {
    * method returns null. If the provided name does not map to a node in the
    * hierarchy, an error will be thrown.
    */
-  getBridgegraph(nodeName: string): graphlib.Graph<GroupNode|OpNode, Metaedge> {
+  getBridgegraph(nodeName: string): graphlib.Graph<GroupNode|OpNode, Metaedge> | null {
     let node = this.index[nodeName];
     if (!node) {
       throw Error('Could not find node in hierarchy: ' + nodeName);
@@ -140,6 +149,9 @@ class HierarchyImpl implements Hierarchy {
     // For each of the parent node's two Metaedge containing graphs, process
     // each Metaedge involving this node.
     _.each([parentMetagraph, parentBridgegraph], parentGraph => {
+
+      if(!parentGraph) return;
+
       _(parentGraph.edges())
         .filter(e => e.v === nodeName || e.w === nodeName)
         .each(parentEdgeObj => {
@@ -195,7 +207,7 @@ class HierarchyImpl implements Hierarchy {
    */
   getChildName(nodeName: string, descendantName: string): string {
     // Walk up the hierarchy from the descendant to find the child.
-    let currentNode: Node = this.index[descendantName];
+    let currentNode: graph.Node = this.index[descendantName];
     while (currentNode) {
       if (currentNode.parentNode && currentNode.parentNode.name === nodeName) {
         return currentNode.name;
@@ -319,7 +331,7 @@ class HierarchyImpl implements Hierarchy {
    * If there is no node with the specified name, an error is thrown. If the
    * node with the specified name is not a group node, null is returned.
    */
-  getTopologicalOrdering(nodeName: string): { [childName: string]: number } {
+  getTopologicalOrdering(nodeName: string): { [childName: string]: number } | null{
     let node = this.index[nodeName];
     if (!node) {
       throw Error('Could not find node with name: ' + nodeName);
@@ -356,13 +368,15 @@ class HierarchyImpl implements Hierarchy {
       _.difference(_.keys(successors), _.keys(destinations));
 
     // Produce an ordering by traversing the graph breadth first.
-    let ordering = this.orderings[nodeName] = {};
+    let ordering:{[key:string]:number} = this.orderings[nodeName] = {};
     let index = 0;
     while (queue.length) {
       let childName = queue.shift();
-      ordering[childName] = index++;
-      _.each(successors[childName], succName => queue.push(succName));
-      delete successors[childName]; // Prevent cycles from infinite looping.
+      if(childName){
+        ordering[childName] = index++;
+        _.each(successors[childName], succName => queue.push(succName));
+        delete successors[childName]; // Prevent cycles from infinite looping.
+      }      
     }
     return ordering;
   }
@@ -371,7 +385,7 @@ class HierarchyImpl implements Hierarchy {
    * Returns a d3 Ordinal function that can be used to look up the index of
    * a node based on its template id.
    */
-  getTemplateIndex(): (string) => number {
+  getTemplateIndex(): (string:string) => number {
     let templateNames = d3.keys(this.templates);
     let templateIndex = d3.scaleOrdinal()
         .domain(templateNames)
@@ -393,8 +407,11 @@ class HierarchyImpl implements Hierarchy {
  * Discovered target names are appended to the targets array.
  */
 function findEdgeTargetsInGraph(
-    graph: graphlib.Graph<GroupNode|OpNode, Metaedge>,
+    graph: graphlib.Graph<GroupNode|OpNode, Metaedge> | null,
     node: Node, inbound: boolean, targets: Edges): void {
+  
+  if(graph===null) return;
+
   let edges = inbound ? graph.inEdges(node.name) : graph.outEdges(node.name);
   _.each(edges, e => {
     let metaedge = graph.edge(e);
@@ -407,7 +424,7 @@ function findEdgeTargetsInGraph(
 export interface HierarchyParams {
   verifyTemplate: boolean;
   seriesNodeMinSize: number;
-  seriesMap: { [name: string]: tf.graph.SeriesGroupingType };
+  seriesMap: { [name: string]: graph.SeriesGroupingType };
   // This string is supplied to dagre as the 'rankdir' property for laying out
   // the graph. TB, BT, LR, or RL. The default is 'BT' (bottom to top).
   rankDirection: string;
@@ -421,17 +438,17 @@ export interface HierarchyParams {
  * @param graph The raw graph.
  * @param params Parameters used when building a hierarchy.
  */
-export function build(graph: tf.graph.SlimGraph, params: HierarchyParams,
+export function build(graph:  SlimGraph, params: HierarchyParams,
     tracker: ProgressTracker): Promise<Hierarchy|void> {
   let h = new HierarchyImpl({'rankdir': params.rankDirection});
   let seriesNames: { [name: string]: string } = {};
-  return tf.graph.util
+  return util
       .runAsyncTask(
           'Adding nodes', 20,
           () => {
             // Get all the possible device and XLA cluster names.
-            let deviceNames = {};
-            let xlaClusterNames = {};
+            let deviceNames:{[key:string]:boolean} = {};
+            let xlaClusterNames:{[key:string]:boolean} = {};
             _.each(graph.nodes, (node, nodeName) => {
               if (node.device) {
                 deviceNames[node.device] = true;
@@ -449,7 +466,7 @@ export function build(graph: tf.graph.SlimGraph, params: HierarchyParams,
           },
           tracker)
       .then(() => {
-        return tf.graph.util.runAsyncTask('Detect series', 20, () => {
+        return util.runAsyncTask('Detect series', 20, () => {
           if (params.seriesNodeMinSize > 0) {
             groupSeries(
                 h.root, h, seriesNames, params.seriesNodeMinSize,
@@ -458,12 +475,12 @@ export function build(graph: tf.graph.SlimGraph, params: HierarchyParams,
         }, tracker);
       })
       .then(() => {
-        return tf.graph.util.runAsyncTask('Adding edges', 30, () => {
+        return util.runAsyncTask('Adding edges', 30, () => {
           addEdges(h, graph, seriesNames);
         }, tracker);
       })
       .then(() => {
-        return tf.graph.util.runAsyncTask(
+        return util.runAsyncTask(
             'Finding similar subgraphs', 30, () => {
               h.templates = template.detect(h, params.verifyTemplate);
             }, tracker);
@@ -474,9 +491,9 @@ export function build(graph: tf.graph.SlimGraph, params: HierarchyParams,
 };
 
 export function joinAndAggregateStats(
-    h: Hierarchy, stats: tf.graph.proto.StepStats) {
+    h: Hierarchy, stats:  StepStats) {
   // Get all the possible device names.
-  let deviceNames = {};
+  let deviceNames:{[key:string]:boolean} = {};
   _.each(h.root.leaves(), nodeName => {
     let leaf = <OpNode> h.node(nodeName);
     if (leaf.device != null) {
@@ -488,7 +505,7 @@ export function joinAndAggregateStats(
   // Reset stats for each group node.
   _.each(h.getNodeMap(), (node, nodeName) => {
     if (node.isGroupNode) {
-      node.stats = new NodeStats(null);
+      node.stats = new NodeStats([]);
       (<GroupNode>node).deviceHistogram = {};
     }
   });
@@ -523,7 +540,7 @@ export function getIncompatibleOps(hierarchy: Hierarchy,
         if (opNode.owningSeries) {
           if (hierarchyParams &&
               hierarchyParams.seriesMap[opNode.owningSeries]
-              === tf.graph.SeriesGroupingType.UNGROUP) {
+              === graph.SeriesGroupingType.UNGROUP) {
             // For un-grouped series node, add each node individually
             nodes.push(opNode)
           } else {
@@ -567,7 +584,7 @@ export function getIncompatibleOps(hierarchy: Hierarchy,
 function addNodes(h: Hierarchy, graph: SlimGraph) {
   // Maps the op of a node to names of nodes that have the op. Used to populate
   // the libraryFunctions field of the hierarchy.
-  const opToNode = {};
+  const opToNode:{[key:string]:any} = {};
 
   _.each(graph.nodes, (node, nodeName) => {
     let path = getHierarchicalPath(node.name);
@@ -632,13 +649,13 @@ function addNodes(h: Hierarchy, graph: SlimGraph) {
         h.setNode(name, child);
         parent.metagraph.setNode(name, child);
 
-        if (name.indexOf(tf.graph.FUNCTION_LIBRARY_NODE_PREFIX) === 0 &&
-            parent.name === tf.graph.ROOT_NAME) {
+        if (name.indexOf( FUNCTION_LIBRARY_NODE_PREFIX) === 0 &&
+            parent.name ===  ROOT_NAME) {
           // This metanode represents a function in the Library. We later copy
           // its contents to dynamically inject function data into the graph
           // when the subhierarchy of a metanode is built (upon its expansion).
           const functionName = name.substring(
-              tf.graph.FUNCTION_LIBRARY_NODE_PREFIX.length);
+               FUNCTION_LIBRARY_NODE_PREFIX.length);
 
           // For now, remember the metanode that represents the function with
           // this name.
@@ -691,7 +708,7 @@ function addEdges(h: Hierarchy, graph: SlimGraph,
 
   // Insert the ancestor path for a node into the provided array, including the
   // node itself. Return the index of the last node inserted (always ROOT).
-  let getPath = (node: Node, path: string[]): number => {
+  let getPath = (node: graph.Node, path: string[]): number => {
     let i = 0;
     while (node) {
       path[i++] = node.name;
@@ -771,12 +788,12 @@ function addEdges(h: Hierarchy, graph: SlimGraph,
  */
 function groupSeries(metanode: Metanode, hierarchy: Hierarchy,
     seriesNames: { [name: string]: string }, threshold: number,
-    map: { [name: string]: tf.graph.SeriesGroupingType },
+    map: { [name: string]:  SeriesGroupingType },
     useGeneralizedSeriesPatterns: boolean) {
   let metagraph = metanode.metagraph;
   _.each(metagraph.nodes(), n => {
     let child = metagraph.node(n);
-    if (child.type === tf.graph.NodeType.META) {
+    if (child.type ===  NodeType.META) {
       groupSeries(
           <Metanode>child,
           hierarchy,
@@ -809,11 +826,11 @@ function groupSeries(metanode: Metanode, hierarchy: Hierarchy,
     // this series has not been adding to the series map, then set this
     // series to be shown ungrouped in the map.
     if (nodeMemberNames.length < threshold && !(seriesNode.name in map)) {
-      map[seriesNode.name] = tf.graph.SeriesGroupingType.UNGROUP;
+      map[seriesNode.name] =  SeriesGroupingType.UNGROUP;
     }
     // If the series is in the map as ungrouped then do not group the series.
     if (seriesNode.name in map
-      && map[seriesNode.name] === tf.graph.SeriesGroupingType.UNGROUP) {
+      && map[seriesNode.name] ===  SeriesGroupingType.UNGROUP) {
       return;
     }
     hierarchy.setNode(seriesName, seriesNode); // add to the index
@@ -1003,14 +1020,14 @@ function detectSeriesAnywhereInNodeName(
     _.each(members, function(name: string) {
       let isGroup = name.charAt(name.length - 1) === '*';
       let namepath = name.split('/');
-      let leaf = namepath[namepath.length - 1];
+      let leaf:string = namepath[namepath.length - 1];
       let parent = namepath.slice(0, namepath.length - 1).join('/');
 
       const numRegex = /(\d+)/g;
       let matches = [];
       let matchResult;
       let prefix;
-      let id;
+      let id:number;
       let suffix;
       let seriesName;
       let matched = 0;
@@ -1019,7 +1036,7 @@ function detectSeriesAnywhereInNodeName(
       while (matchResult = numRegex.exec(leaf)) {
         ++matched;
         prefix = leaf.slice(0, matchResult.index);
-        id = matchResult[0];
+        id = parseInt( matchResult[0]);
         suffix = leaf.slice(matchResult.index + matchResult[0].length);
         seriesName = getSeriesNodeName(prefix, suffix, parent);
         forwardDict[seriesName] = forwardDict[seriesName];
@@ -1135,4 +1152,4 @@ function addSeriesToDict(seriesNodes: SeriesNode[],
   }
 }
 
-} // close module tf.graph.hierarchy
+ 
