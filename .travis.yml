@@ -1,0 +1,10 @@
+language: node_js
+node_js:
+  - '7'
+
+before_script:
+  - npm install -g gulp-cli bower
+  - bower install
+
+script:
+  - npm run test

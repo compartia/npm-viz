@@ -1,0 +1,14 @@
+{
+  "name": "my-app",
+  "description": "",
+  "authors": [],
+  "license": "ISC",
+  "homepage": "",
+  "ignore": ["**/.*", "node_modules", "bower_components", "test", "tests"],
+  "dependencies": {
+    "polymer": "2.6.0"
+  },
+  "devDependencies": {
+    "web-component-tester": "^6.3.0"
+  }
+}
