@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-module tf {
+
   /**
    * Mapping from color palette name to color palette, which contains
    * exact colors for multiple states of a single color palette.
@@ -97,7 +97,7 @@ module tf {
       'active': '#424242',  // 800
       'disabled': 'F5F5F5'  // 100
     }
-  ].reduce((m, c) => {
+  ].reduce((m:any, c:{[key:string]:string}) => {
     m[c.name] = c;
     return m;
   }, {});
@@ -123,8 +123,9 @@ module tf {
     {color: 'Teal', groups: ['control_flow_ops', 'data_flow_ops']},
     {color: 'Pink', groups: ['summary_ops']},
     {color: 'Deep Pink', groups: ['io_ops']}
-  ].reduce((m, c) => {
-    c.groups.forEach(function(group) { m[group] = c.color; });
+  ].reduce((m:any, c) => {
+    
+    c.groups.forEach(function(group:string) {  m[group] = c.color; });
     return m;
   }, {});
-}
+
