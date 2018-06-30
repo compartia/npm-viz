@@ -12,7 +12,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.graph.layout {
+
+import { NAMESPACE_DELIM, NodeType } from './graph';
+import * as render from './render';
+import * as d3 from 'd3';
+import * as _ from 'lodash';
+ 
+var dagre=require("dagre");
 
 /** Set of parameters that define the look and feel of the graph. */
 export const PARAMS = {
@@ -36,12 +42,12 @@ export const PARAMS = {
        *
        * See https://github.com/cpettitt/dagre/wiki#configuring-the-layout
        */
-      rankSep: 25,
+      rankSep: 35,
       /**
        * Dagre's edgesep param - number of pixels that separate
        * edges horizontally in the layout.
        */
-      edgeSep: 5,
+      edgeSep: 7,
     },
     /** Graph parameter for metanode. */
     series: {
@@ -86,7 +92,7 @@ export const PARAMS = {
       /** X-space between each extracted node and the core graph. */
       extractXOffset: 15,
       /** Y-space between each extracted node. */
-      extractYOffset: 20,
+      extractYOffset: 20
     },
     series: {
       paddingTop: 10,
@@ -99,13 +105,13 @@ export const PARAMS = {
   nodeSize: {
     /** Size of meta nodes. */
     meta: {
-      radius: 5,
+      radius: 0,
       width: 60,
       maxLabelWidth: 52,
       /** A scale for the node's height based on number of nodes inside */
       // Hack - set this as an any type to avoid issues in exporting a type
       // from an external module.
-      height: (d3 as any).scaleLinear().domain([1, 200]).range([15, 60]).clamp(true),
+      height: (d3 as any).scaleLinear().domain([1, 200]).range([15, 60]).clamp(true),      
       /** The radius of the circle denoting the expand button. */
       expandButtonRadius: 3
     },
@@ -156,9 +162,9 @@ export const PARAMS = {
   },
   shortcutSize: {
     /** Size of shortcuts for op nodes */
-    op: {width: 10, height: 4},
+    op: {width: 12, height: 4 , radius: 0},
     /** Size of shortcuts for meta nodes */
-    meta: {width: 12, height: 4, radius: 1},
+    meta: {width: 12, height: 4, radius: 0},
     /** Size of shortcuts for series nodes */
     series: {
       width: 14,
@@ -177,7 +183,7 @@ export const PARAMS = {
     /** X-space between each annotation-node and its label. */
     labelOffset: 2,
     /** Defines the max width for annotation label */
-    maxLabelWidth: 120
+    maxLabelWidth: 60
   },
   constant: {size: {width: 4, height: 4}},
   series: {
@@ -209,6 +215,7 @@ export const PARAMS = {
  */
 export const MIN_AUX_WIDTH = 140;
 
+
 /** Calculate layout for a scene of a group node. */
 export function layoutScene(renderNodeInfo: render.RenderGroupNodeInfo): void {
   // Update layout, size, and annotations of its children nodes and edges.
@@ -236,8 +243,9 @@ function updateTotalWidthOfNode(renderInfo: render.RenderNodeInfo): void {
   // Assign the width of the core box (the main shape of the node).
   renderInfo.coreBox.width = renderInfo.width;
   renderInfo.coreBox.height = renderInfo.height;
-  // TODO: Account for font width rather than using a magic number.
-  let labelLength = renderInfo.displayName.length;
+  // TODO(jimbo): Account for font width rather than using a magic number.
+  let labelLength = renderInfo.node.name.length -
+      renderInfo.node.name.lastIndexOf(NAMESPACE_DELIM) - 1;
   let charWidth = 3; // 3 pixels per character.
   // Compute the total width of the node.
   renderInfo.width = Math.max(renderInfo.coreBox.width +
@@ -253,8 +261,8 @@ function layoutChildren(renderNodeInfo: render.RenderGroupNodeInfo): void {
   let children = renderNodeInfo.coreGraph.nodes().map(n => {
     return renderNodeInfo.coreGraph.node(n);
   }).concat(renderNodeInfo.isolatedInExtract,
-            renderNodeInfo.isolatedOutExtract,
-            renderNodeInfo.libraryFunctionsExtract);
+      renderNodeInfo.isolatedOutExtract,
+      renderNodeInfo.libraryFunctionsExtract);
 
   _.each(children, childNodeInfo => {
     // Set size of each child
@@ -314,14 +322,14 @@ function layoutChildren(renderNodeInfo: render.RenderGroupNodeInfo): void {
  */
 function dagreLayout(
     graph: graphlib.Graph<render.RenderNodeInfo, render.RenderMetaedgeInfo>,
-    params): {height: number, width: number} {
+    params:any): {height: number, width: number} {
   _.extend(graph.graph(), {
     nodesep: params.nodeSep,
     ranksep: params.rankSep,
     edgesep: params.edgeSep
   });
-  let bridgeNodeNames = [];
-  let nonBridgeNodeNames = [];
+  let bridgeNodeNames:string[] = [];
+  let nonBridgeNodeNames:string[] = [];
 
   // Split out nodes into bridge and non-bridge nodes, and calculate the total
   // width we should use for bridge nodes.
@@ -358,7 +366,7 @@ function dagreLayout(
     let x2 = nodeInfo.x + w;
     minX = x1 < minX ? x1 : minX;
     maxX = x2 > maxX ? x2 : maxX;
-    // TODO: Account for the height of labels above op nodes here.
+    // TODO(jimbo): Account for the height of labels above op nodes here.
     let h = 0.5 * nodeInfo.height;
     let y1 = nodeInfo.y - h;
     let y2 = nodeInfo.y + h;
@@ -430,7 +438,7 @@ function dagreLayout(
   _.each(graph.edges(), edgeObj => {
     _.each(graph.edge(edgeObj).points, (point: render.Point) => {
         point.x -= minX;
-        point.y -= minY;
+        point.y -= minY + Math.random()/100.0;
       });
   });
 
@@ -453,8 +461,12 @@ function layoutMetanode(renderNodeInfo: render.RenderGroupNodeInfo): void {
   // Calculate the position of nodes in isolatedInExtract relative to the
   // top-left corner of inExtractBox (the bounding box for all inExtract nodes)
   // and calculate the size of the inExtractBox.
-  let maxInExtractWidth = _.max(renderNodeInfo.isolatedInExtract,
-      renderNode => renderNode.width).width;
+  
+  let maxInExtractWidth = 0;
+  let _maxIsolatedInExtract = _.maxBy(renderNodeInfo.isolatedInExtract,
+      renderNode => renderNode.width);
+  if(!!_maxIsolatedInExtract) maxInExtractWidth=_maxIsolatedInExtract.width;
+  
   renderNodeInfo.inExtractBox.width = maxInExtractWidth != null ?
       maxInExtractWidth : 0;
 
@@ -470,10 +482,11 @@ function layoutMetanode(renderNodeInfo: render.RenderGroupNodeInfo): void {
   // Calculate the position of nodes in isolatedOutExtract relative to the
   // top-left corner of outExtractBox (the bounding box for all outExtract
   // nodes) and calculate the size of the outExtractBox.
-  let maxOutExtractWidth = _.max(renderNodeInfo.isolatedOutExtract,
-      renderNode => renderNode.width).width;
-  renderNodeInfo.outExtractBox.width = maxOutExtractWidth != null ?
-      maxOutExtractWidth : 0;
+
+  let maxOutExtractWidth = 0;
+  let _maxOutExtract = _.maxBy(renderNodeInfo.isolatedOutExtract,
+    renderNode => renderNode.width);
+  if (!!_maxOutExtract) maxOutExtractWidth = _maxOutExtract.width;
 
   renderNodeInfo.outExtractBox.height =
     _.reduce(renderNodeInfo.isolatedOutExtract, (height, child, i) => {
@@ -487,10 +500,14 @@ function layoutMetanode(renderNodeInfo: render.RenderGroupNodeInfo): void {
   // Calculate the position of nodes in libraryFunctionsExtract relative to the
   // top-left corner of libraryFunctionsBox (the bounding box for all library
   // function nodes) and calculate the size of the libraryFunctionsBox.
-  let maxLibraryFunctionsWidth = _.max(renderNodeInfo.libraryFunctionsExtract,
-      renderNode => renderNode.width).width;
+  let maxLibraryFunctionsWidth = 0;
+  let _maxLibraryFunctions = _.maxBy(renderNodeInfo.libraryFunctionsExtract,
+    renderNode => renderNode.width);
+  if (_maxLibraryFunctions) maxLibraryFunctionsWidth = _maxLibraryFunctions.width;
+
+
   renderNodeInfo.libraryFunctionsBox.width = maxLibraryFunctionsWidth != null ?
-      maxLibraryFunctionsWidth : 0;
+    maxLibraryFunctionsWidth : 0;
 
   renderNodeInfo.libraryFunctionsBox.height =
     _.reduce(renderNodeInfo.libraryFunctionsExtract, (height, child, i) => {
@@ -501,6 +518,7 @@ function layoutMetanode(renderNodeInfo: render.RenderGroupNodeInfo): void {
       return height + yOffset + child.height;
     }, 0);
 
+    
   // Compute the total padding between the core graph, in-extract and
   // out-extract boxes.
   let numParts = 0;
@@ -522,10 +540,11 @@ function layoutMetanode(renderNodeInfo: render.RenderGroupNodeInfo): void {
   // Add the in-extract and out-extract width to the core box width. Do not let
   // the auxiliary width be too small, lest it be smaller than the title.
   const auxWidth = Math.max(
-      MIN_AUX_WIDTH,
-      renderNodeInfo.inExtractBox.width + renderNodeInfo.outExtractBox.width);
+    MIN_AUX_WIDTH,
+    renderNodeInfo.inExtractBox.width + renderNodeInfo.outExtractBox.width);
   renderNodeInfo.coreBox.width += auxWidth + padding +
-      renderNodeInfo.libraryFunctionsBox.width + padding;
+    renderNodeInfo.libraryFunctionsBox.width + padding;
+
   renderNodeInfo.coreBox.height =
     params.labelHeight +
     Math.max(
@@ -571,7 +590,7 @@ function layoutSeriesNode(node: render.RenderGroupNodeInfo): void {
  * Calculate layout for annotations of a given node.
  * This will modify positions of the given node and its annotations.
  *
- * @see tf.graph.render.Node and tf.graph.render.Annotation
+ * @see render.Node and render.Annotation
  * for description of each property of each render node.
  *
  */
@@ -791,4 +810,4 @@ function intersectPointAndNode(
   return {x: cx + deltaX, y: cy + deltaY};
 }
 
-} // close module
+ 
