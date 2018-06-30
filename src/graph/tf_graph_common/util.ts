@@ -13,11 +13,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+
+import {NodeStats} from './graph'
+import { ProgressTracker } from "./common";
+import * as _ from 'lodash';
 /**
  * @fileoverview Utility functions for the tensorflow graph visualizer.
  */
 
-module tf.graph.util {
+ 
   /**
    * Recommended delay (ms) when running an expensive task asynchronously
    * that gives enough time for the progress bar to update its UI.
@@ -42,17 +46,17 @@ module tf.graph.util {
    */
   export function getTracker(polymerComponent: any) {
     return {
-      setMessage: function(msg) {
+      setMessage: function(msg:string) {
         polymerComponent.set(
             'progress', {value: polymerComponent.progress.value, msg: msg});
       },
-      updateProgress: function(value) {
+      updateProgress: function(value:number) {
         polymerComponent.set('progress', {
           value: polymerComponent.progress.value + value,
           msg: polymerComponent.progress.msg
         });
       },
-      reportError: function(msg: string, err) {
+      reportError: function(msg: string, err: Error) {
         // Log the stack trace in the console.
         console.error(err.stack);
         // And send a user-friendly message to the UI.
@@ -73,20 +77,20 @@ module tf.graph.util {
   export function getSubtaskTracker(
       parentTracker: ProgressTracker, impactOnTotalProgress: number,
       subtaskMsg: string): ProgressTracker {
-    return {
-      setMessage: function(progressMsg) {
+    return <ProgressTracker>{
+      setMessage: function(progressMsg:string):void{
         // The parent should show a concatenation of its message along with
         // its subtask tracker message.
         parentTracker.setMessage(subtaskMsg + ': ' + progressMsg);
       },
-      updateProgress: function(incrementValue) {
+      updateProgress: function(incrementValue:number):void {
         // Update the parent progress relative to the child progress.
         // For example, if the sub-task progresses by 30%, and the impact on the
         // total progress is 50%, then the task progresses by 30% * 50% = 15%.
         parentTracker.updateProgress(
             incrementValue * impactOnTotalProgress / 100);
       },
-      reportError: function(msg: string, err: Error) {
+      reportError: function(msg: string, err: Error):void {
         // The parent should show a concatenation of its message along with
         // its subtask error message.
         parentTracker.reportError(subtaskMsg + ': ' + msg, err);
@@ -99,13 +103,13 @@ module tf.graph.util {
    */
   export function runTask<T>(
       msg: string, incProgressValue: number, task: () => T,
-      tracker: ProgressTracker): T {
+      tracker: ProgressTracker): T|undefined {
     // Update the progress message to say the current running task.
     tracker.setMessage(msg);
     // Run the expensive task with a delay that gives enough time for the
     // UI to update.
     try {
-      let result = tf.graph.util.time(msg, task);
+      let result =  time(msg, task);
       // Update the progress value.
       tracker.updateProgress(incProgressValue);
       // Return the result to be used by other tasks.
@@ -130,7 +134,7 @@ module tf.graph.util {
       // UI to update.
       setTimeout(function() {
         try {
-          let result = tf.graph.util.time(msg, task);
+          let result = time(msg, task);
           // Update the progress value.
           tracker.updateProgress(incProgressValue);
           // Return the result to be used by other tasks.
@@ -153,7 +157,7 @@ module tf.graph.util {
       msg: string, incProgressValue: number, task: () => Promise<T>,
       tracker: ProgressTracker): Promise<T> {
     return new Promise((resolve, reject) => {
-      let handleError = function(e) {
+      let handleError = function(e:Error) {
         // Errors that happen inside asynchronous tasks are
         // reported to the tracker using a user-friendly message.
         tracker.reportError('Failed ' + msg, e);
@@ -214,11 +218,11 @@ module tf.graph.util {
    * Returns the human readable version of the unit.
    * (e.g. 1.35 GB, 23 MB, 34 ms, 6.53 min etc).
    */
-  export function convertUnitsToHumanReadable(value, units, unitIndex) {
+  export function convertUnitsToHumanReadable(value:any, units:Array<any>, unitIndex:number|null):string|undefined {
     unitIndex = unitIndex == null ? 0 : unitIndex;
     if (unitIndex + 1 < units.length &&
         value >= units[unitIndex + 1].numUnits) {
-      return tf.graph.util.convertUnitsToHumanReadable(
+      return convertUnitsToHumanReadable(
           value / units[unitIndex + 1].numUnits, units, unitIndex + 1);
     }
     // toPrecision() has the tendency to return a number in scientific
@@ -248,7 +252,9 @@ module tf.graph.util {
     let index = 0;
     let largestIndex = 0;
     // Find the shortest name across all strings.
-    let minLength = _.min(_.map(strings, str => str.length));
+    let minLength:number|undefined = _.min(_.map(strings, str => str.length));
+    if (!minLength)
+      minLength = 100;
     while (true) {
       index++;
       let prefixes = _.map(strings, str => str.substring(0, index));
@@ -256,7 +262,7 @@ module tf.graph.util {
         return (i === 0 ? true : prefix === prefixes[i - 1]);
       });
       if (allTheSame) {
-        if (index >= minLength) {
+        if (  index >= minLength) {
           // There is a string whose whole name is a prefix to other string.
           // In this case, we return the original list of string.
           return strings;
@@ -269,48 +275,7 @@ module tf.graph.util {
     return _.map(strings, str => str.substring(largestIndex));
   }
 
-  /**
-   * Given a queryString, aka ?foo=1&bar=2, return the object representation.
-   */
-  export function getQueryParams(queryString: string) {
-    if (queryString.charAt(0) === '?') {
-      queryString = queryString.slice(1);
-    }
+  
 
-    let queryParams = _.chain(queryString.split('&'))
-                          .map((item) => {
-                            if (item) {
-                              return item.split('=');
-                            }
-                          })
-                          .compact()
-                          .value();
-
-    return _.object(queryParams);
-  }
-
-  /**
-   * Given a timestamp in microseconds, return a human-friendly string denoting
-   * how long ago the timestamp was.
-   */
-  export function computeHumanFriendlyTime(timeInMicroseconds: number) {
-    var timeDifferenceInMs =
-        +(new Date()) - +(new Date(timeInMicroseconds / 1e3));
-    if (timeDifferenceInMs < 30000) {
-      return 'just now';
-    } else if (timeDifferenceInMs < 60000) {
-      return Math.floor(timeDifferenceInMs / 1000) + ' seconds ago';
-    } else if (timeDifferenceInMs < 120000) {
-      return 'a minute ago';
-    } else if (timeDifferenceInMs < 3600000) {
-      return Math.floor(timeDifferenceInMs / 60000) + ' minutes ago';
-    } else if (Math.floor(timeDifferenceInMs / 3600000) == 1) {
-      return 'an hour ago';
-    } else if (timeDifferenceInMs < 86400000) {
-      return Math.floor(timeDifferenceInMs / 3600000) + ' hours ago';
-    } else if (timeDifferenceInMs < 172800000) {
-      return 'yesterday';
-    }
-    return Math.floor(timeDifferenceInMs / 86400000) + ' days ago';
-  }
-}
+  
+ 
