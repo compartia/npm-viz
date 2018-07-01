@@ -10,7 +10,7 @@ import * as node from './tf_graph_common/node';
 import { RenderGraphInfo, RenderNodeInfo } from "./tf_graph_common/render";
 import * as scene from './tf_graph_common/scene';
 import * as util from './tf_graph_common/util';
-
+import './tf-graph-minimap'
 
 
 
