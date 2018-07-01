@@ -139,7 +139,7 @@ export class Minimap {
    * was updated (e.g. when a node was expanded).
    */
   update(): void {
-    let sceneSize = null;
+    let sceneSize:SVGRect|null = null;
     try {
       // Get the size of the entire scene.
       sceneSize = this.zoomG.getBBox();
@@ -152,6 +152,8 @@ export class Minimap {
       // detached from the dom.
       return;
     }
+    if(!sceneSize) return;
+
     let $download = d3.select('#graphdownload');
     this.download = <HTMLLinkElement>$download.node();
     $download.on('click', d => {
@@ -249,10 +251,16 @@ export class Minimap {
     image.onload = () => {
       // Draw the svg content onto the buffer canvas.
       let context = this.canvasBuffer.getContext('2d');
-      context.clearRect(0, 0, this.canvasBuffer.width,
+      if (context) {
+        context.clearRect(0, 0, this.canvasBuffer.width,
           this.canvasBuffer.height);
-      context.drawImage(image, 0, 0,
-        this.minimapSize.width, this.minimapSize.height);
+        context.drawImage(image, 0, 0,
+          this.minimapSize.width, this.minimapSize.height);
+      } else {
+        throw "no context";
+      }
+
+
       requestAnimationFrame(() => {
         // Hide the old canvas and show the new buffer canvas.
         d3.select(this.canvasBuffer).style('display', null);
@@ -261,10 +269,15 @@ export class Minimap {
         [this.canvas, this.canvasBuffer] = [this.canvasBuffer, this.canvas];
       });
       let downloadContext = this.downloadCanvas.getContext('2d');
-      downloadContext.clearRect(0, 0, this.downloadCanvas.width,
-        this.downloadCanvas.height);
-      downloadContext.drawImage(image, 0, 0,
-        this.downloadCanvas.width, this.downloadCanvas.height);
+      if (downloadContext) {
+        downloadContext.clearRect(0, 0, this.downloadCanvas.width,
+          this.downloadCanvas.height);
+        downloadContext.drawImage(image, 0, 0,
+          this.downloadCanvas.width, this.downloadCanvas.height);
+      } else {
+        throw "no context";
+      }
+
     };
     image.onerror = () => {
       let blob = new Blob([svgXml], {type: 'image/svg+xml;charset=utf-8'});
