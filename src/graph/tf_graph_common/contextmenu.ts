@@ -13,7 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-module tf.graph.scene.contextmenu {
+
+import * as d3 from 'd3-selection'
+ 
 
 /** Function that converts data to a title string. */
 export interface TitleFunction {
@@ -37,7 +39,7 @@ export interface ContextMenuItem {
  * Returns the top and left distance of the scene element from the top left
  * corner of the screen.
  */
-function getOffset(sceneElement) {
+function getOffset(sceneElement:any) {
     let leftDistance = 0;
     let topDistance = 0;
     let currentElement = sceneElement;
@@ -59,14 +61,14 @@ function getOffset(sceneElement) {
  * selection.on function. Renders the context menu that is to be displayed
  * in response to the event.
  */
-export function getMenu(sceneElement, menu: ContextMenuItem[]) {
+export function getMenu(sceneElement:any, menu: ContextMenuItem[]) {
   let menuSelection = d3.select('.context-menu');
   // Close the menu when anything else is clicked.
   d3.select('body').on(
       'click.context', function() { menuSelection.style('display', 'none'); });
 
   // Function called to populate the context menu.
-  return function(data, index: number): void {
+  return function(data:any, index: number): void {
     // Position and display the menu.
     let event = <MouseEvent>d3.event;
     const sceneOffset = getOffset(sceneElement);
@@ -82,16 +84,19 @@ export function getMenu(sceneElement, menu: ContextMenuItem[]) {
     // Add provided items to the context menu.
     menuSelection.html('');
     let list = menuSelection.append('ul');
+
+    let action=(d:ContextMenuItem, i:number) =>{           
+      d.action(this, data, index);
+      menuSelection.style('display', 'none');
+    }
+
     list.selectAll('li')
         .data(menu)
         .enter()
         .append('li')
         .html(function(d) { return d.title(data); })
-        .on('click', (d, i) => {
-          d.action(this, data, index);
-          menuSelection.style('display', 'none');
-        });
+        .on('click', action);
   };
 };
 
-} // close module
+

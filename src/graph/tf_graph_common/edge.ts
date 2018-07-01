@@ -18,6 +18,7 @@ import { EDGE_KEY_DELIM, Metaedge, BaseEdge, OpNode } from './graph';
 import * as render from './render';
 import * as scene from './scene';
 import { Class } from './scene';
+import { EdgeData } from './annotation';
 
 /** Delimiter between dimensions when showing sizes of tensors. */
 const TENSOR_SHAPE_DELIM = '×';
@@ -49,8 +50,7 @@ let arrowheadMap =
 /** Minimum stroke width to put edge labels in the middle of edges */
 const CENTER_EDGE_LABEL_MIN_STROKE_WIDTH = 2.5;
 
-export type EdgeData = {v: string, w: string, label: render.RenderMetaedgeInfo};
-
+ 
 /**
  * Function run when an edge is selected.
  */
@@ -313,7 +313,7 @@ export function appendEdge(edgeGroup:any, d: EdgeData,
       // There is an underlying Metaedge.
       size = d.label.metaedge.totalSize;
     }
-    strokeWidth = sceneElement.renderHierarchy.edgeWidthSizedBasedScale(size);
+    strokeWidth = sceneElement.renderHierarchy.edgeWidthSizedBasedScale!(size);
   }
 
   let path = edgeGroup.append('path')
@@ -379,28 +379,28 @@ function getEdgePathInterpolator(d: EdgeData, i: number, a: string) {
   // of the path.
   if (d.label.startMarkerId) {
     points = adjustPathPointsForMarker(
-        points, d3.select('#' + d.label.startMarkerId), true);
+        points!, d3.select('#' + d.label.startMarkerId), true);
   }
   if (d.label.endMarkerId) {
     points = adjustPathPointsForMarker(
-        points, d3.select('#' + d.label.endMarkerId), false);
+        points!, d3.select('#' + d.label.endMarkerId), false);
   }
 
   if (!adjoiningMetaedge) {
-    return d3.interpolate(a, interpolate(points));
+    return d3.interpolate(a, interpolate(points!));
   }
 
   let renderPath = this;
 
   // Get the adjoining path that matches the adjoining metaedge.
   let adjoiningPath =
-    <SVGPathElement>((<HTMLElement>adjoiningMetaedge.edgeGroup.node())
+    <SVGPathElement>((<HTMLElement>adjoiningMetaedge.edgeGroup!.node())
       .firstChild);
 
   // Find the desired SVGPoint along the adjoining path, then convert those
   // coordinates into the space of the renderPath using its Current
   // Transformation Matrix (CTM).
-  let inbound = renderMetaedgeInfo.metaedge.inbound;
+  let inbound = renderMetaedgeInfo.metaedge!.inbound;
 
   return function(t) {
     let adjoiningPoint = adjoiningPath
@@ -410,10 +410,10 @@ function getEdgePathInterpolator(d: EdgeData, i: number, a: string) {
 
     // Update the relevant point in the renderMetaedgeInfo's points list, then
     // re-interpolate the path.
-    let index = inbound ? 0 : points.length - 1;
-    points[index].x = adjoiningPoint.x;
-    points[index].y = adjoiningPoint.y;
-    let dPath = interpolate(points);
+    let index = inbound ? 0 : points!.length - 1;
+    points![index].x = adjoiningPoint.x;
+    points![index].y = adjoiningPoint.y;
+    let dPath = interpolate(points!);
     return dPath;
   };
 }

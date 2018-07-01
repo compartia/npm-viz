@@ -16,14 +16,18 @@ limitations under the License.
  * Package for the Render Hierarchy for TensorFlow graph.
  */
 
-import { BridgeNode, EllipsisNode, EllipsisNodeImpl, GraphType, GroupNode, InclusionType, Metaedge, Metanode, Node, NodeType, OpNode, createGraph, getHierarchicalPath } from './graph';
-import * as hierarchy from './hierarchy';
-import * as edge from './edge';
-import * as graph from './graph';
-import * as util from './util';
 import * as d3 from 'd3';
 import * as _ from 'lodash';
+import { EdgeData } from './annotation';
+import * as edge from './edge';
+import * as graph from './graph';
+import { BridgeNode, createGraph, EllipsisNode, FUNCTION_LIBRARY_NODE_PREFIX, getHierarchicalPath, GraphType, GroupNode, InclusionType, Metaedge, Metanode, Node, NodeType, OpNode } from './graph';
+import * as hierarchy from './hierarchy';
+import { NodeDef } from './proto';
+import * as util from './util';
 
+
+const UNKNOWN="___unknown___";
 export type Point = {x: number, y: number};
 
 /**
@@ -87,7 +91,7 @@ export let SeriesNodeColors = {
  * Function that computes edge thickness in pixels.
  */
 export interface EdgeThicknessFunction {
-  (edgeData: edge.EdgeData, edgeClass: string): number;
+  (edgeData: EdgeData, edgeClass: string): number;
 }
 
 /**
@@ -198,16 +202,17 @@ const nodeDisplayNameRegex = new RegExp(
  * for each node in the graph.
  */
 export class RenderGraphInfo {
+  svgId?:string;
   hierarchy: hierarchy.Hierarchy;
   private displayingStats: boolean;
   private index: {[nodeName: string]: RenderNodeInfo};
   private renderedOpNames: string[];
-  private deviceColorMap: d3.ScaleOrdinal<string, string>;
-  private xlaClusterColorMap: d3.ScaleOrdinal<string, string>;
-  private memoryUsageScale: d3.ScaleLinear<string, string>;
-  private computeTimeScale: d3.ScaleLinear<string, string>;
+  private deviceColorMap?: d3.ScaleOrdinal<string, string>;
+  private xlaClusterColorMap?: d3.ScaleOrdinal<string, string>;
+  private memoryUsageScale?: d3.ScaleLinear<string, string>;
+  private computeTimeScale?: d3.ScaleLinear<string, string>;
   /** Scale for the thickness of edges when there is no shape information. */
-  edgeWidthSizedBasedScale:
+  edgeWidthSizedBasedScale?:
       d3.ScaleLinear<number, number> | d3.ScalePower<number, number>;
   // Since the rendering information for each node is constructed lazily,
   // upon node's expansion by the user, we keep a map between the node's name
@@ -216,10 +221,10 @@ export class RenderGraphInfo {
   private hasSubhierarchy: {[nodeName: string]: boolean};
   root: RenderGroupNodeInfo;
   traceInputs: Boolean;
-  edgeLabelFunction: EdgeLabelFunction;
+  edgeLabelFunction?: EdgeLabelFunction;
   // An optional function that computes the thickness of an edge given edge
   // data. If not provided, defaults to encoding tensor size in thickness.
-  edgeWidthFunction: EdgeThicknessFunction;
+  edgeWidthFunction?: EdgeThicknessFunction;
 
   constructor(hierarchy: hierarchy.Hierarchy, displayingStats: boolean) {
     this.hierarchy = hierarchy;
@@ -263,7 +268,7 @@ export class RenderGraphInfo {
       }
     });
     this.memoryUsageScale = d3.scaleLinear<string, string>()
-        .domain([0, maxMemory])
+        .domain([0, maxMemory!])
         .range(PARAMS.minMaxColors);
 
     // Find the maximum compute time. Use 0 as the minimum.
@@ -276,7 +281,7 @@ export class RenderGraphInfo {
       }
     });
     this.computeTimeScale = d3.scaleLinear<string, string>()
-        .domain([0, maxComputeTime])
+        .domain([0, maxComputeTime!])
         .range(PARAMS.minMaxColors);
 
     this.edgeWidthSizedBasedScale = this.hierarchy.hasShapeInfo ?
@@ -307,7 +312,7 @@ export class RenderGraphInfo {
   getOrCreateRenderNodeByName(nodeName: string): RenderNodeInfo {
     // Polymer may invoke this with null.
     if (!nodeName) {
-      return null;
+      throw "illegal argument nodeName";
     }
 
     if (nodeName in this.index) {
@@ -319,7 +324,7 @@ export class RenderGraphInfo {
     // when a graph is reloaded while the infocard points to a node not visible
     // at the top-level.
     if (!node) {
-      return null;
+      throw "node not found: illegal argument nodeName";
     }
     let renderInfo = node.isGroupNode ?
         new RenderGroupNodeInfo(<GroupNode>node, this.hierarchy.graphOptions) :
@@ -328,15 +333,15 @@ export class RenderGraphInfo {
     this.renderedOpNames.push(nodeName);
 
     if (node.stats) {
-      renderInfo.memoryColor = this.memoryUsageScale(node.stats.totalBytes);
+      renderInfo.memoryColor = this.memoryUsageScale!(node.stats.totalBytes);
       renderInfo.computeTimeColor =
-          this.computeTimeScale(node.stats.getTotalMicros());
+          this.computeTimeScale!(node.stats.getTotalMicros());
     }
 
     if (!node.isGroupNode) {
       let clusterName = (node as OpNode).xlaCluster;
       if (clusterName) {
-        renderInfo.xlaClusterColor = this.xlaClusterColorMap(clusterName);
+        renderInfo.xlaClusterColor = this.xlaClusterColorMap!(clusterName);
       }
     }
 
@@ -350,9 +355,9 @@ export class RenderGraphInfo {
       let pairs = _.toPairs((<GroupNode>node).deviceHistogram);
       if (pairs.length > 0) {
         // Compute the total # of devices.
-        let numDevices = _.sum(pairs, _.last);
+        let numDevices = _.sumBy(pairs, p => p[1]);
         renderInfo.deviceColors = _.map(pairs, pair => ({
-              color: this.deviceColorMap(pair[0]),
+              color: this.deviceColorMap!(pair[0]),
               // Normalize to a proportion of total # of devices.
               proportion: pair[1] / numDevices
             }));
@@ -361,7 +366,7 @@ export class RenderGraphInfo {
       let device = (<OpNode>renderInfo.node).device;
       if (device) {
         renderInfo.deviceColors = [{
-          color: this.deviceColorMap(device),
+          color: this.deviceColorMap!(device),
           proportion: 1.0
         }];
       }
@@ -379,7 +384,7 @@ export class RenderGraphInfo {
   getNearestVisibleAncestor(name: string): string {
     let path = getHierarchicalPath(name);
     let i = 0;
-    let renderNode: RenderNodeInfo = null;
+    let renderNode: RenderNodeInfo | null = null;
     // Fallthrough. If everything was expanded return the node.
     let nodeName = name;
     for (; i < path.length; i++) {
@@ -394,8 +399,8 @@ export class RenderGraphInfo {
     // Check case where highlighted node is an embedded node whose parent node
     // is also its hierarchical parent. In this case, we want to return the
     // embedded node name, as it is also displayed if its parent has been
-    // displayed.
-    if (i == path.length - 2) {
+    // displayed.     
+    if (renderNode && i == path.length - 2) {
       let nextName = path[i + 1];
       if (renderNode.inAnnotations.nodeNames[nextName]) {
         return nextName;
@@ -460,14 +465,15 @@ export class RenderGraphInfo {
       newPrefix: string): OpNode {
     const newName = node.name.replace(
         libraryFunctionNodeName, newPrefix);
-    let newOpNode = parentMetanode.metagraph.node(newName);
-    if (newOpNode) {
+    let _newOpNode = parentMetanode.metagraph.node(newName);
+    if (_newOpNode) {
       // This node had already been created and added to the graph.
-      return newOpNode as OpNode;
+      return _newOpNode as OpNode;
     }
 
+    let newOpNode:OpNode =
     // Create a new op node.
-    newOpNode = new OpNodeImpl({
+     new graph.OpNodeImpl(<NodeDef>{
       name: newName,
       input: [],
       device: node.device,
@@ -658,7 +664,7 @@ export class RenderGraphInfo {
       const newV = edge.v.replace(oldPrefix, newPrefix);
       const newW = edge.w.replace(oldPrefix, newPrefix);
 
-      const newMetaEdge = new MetaedgeImpl(newV, newW);
+      const newMetaEdge = new graph.MetaedgeImpl(newV, newW);
 
       // Duplicate various properties.
       newMetaEdge.inbound = edge.inbound;
@@ -804,8 +810,8 @@ export class RenderGraphInfo {
     let metagraph = renderGroupNodeInfo.node.metagraph;
     let coreGraph = renderGroupNodeInfo.coreGraph;
 
-    const nodesThatGotCloned = [];
-    const functionCallMetanodesToAdd = [];
+    const nodesThatGotCloned: graph.Node[] = [];
+    const functionCallMetanodesToAdd: graph.Metanode[] = [];
     if (!_.isEmpty(this.hierarchy.libraryFunctions)) {
       // This graph has library functions. Add them to the current
       // sub-hierarchy if necessary.
@@ -938,11 +944,11 @@ export class RenderGraphInfo {
       // Counts of all control edges involving other nodes by name.
       control: <{[nodeName: string]: number}> {},
     };
-    _.each(bridgegraph.edges(), e => {
+    _.each(bridgegraph!.edges(), e => {
       // An edge is inbound if its destination node is in the metagraph.
       let inbound = !!metagraph.node(e.w);
       let otherName = inbound ? e.v : e.w;
-      let metaedge = bridgegraph.edge(e);
+      let metaedge = bridgegraph!.edge(e);
       if (!metaedge.numRegularEdges) {
         otherCounts.control[otherName] =
           (otherCounts.control[otherName] || 0) + 1;
@@ -955,8 +961,8 @@ export class RenderGraphInfo {
 
     // Add annotations and edges for bridgegraph relationships.
     let hierarchyNodeMap = this.hierarchy.getNodeMap();
-    _.each(bridgegraph.edges(), bridgeEdgeObj => {
-      let bridgeMetaedge = bridgegraph.edge(bridgeEdgeObj);
+    _.each(bridgegraph!.edges(), bridgeEdgeObj => {
+      let bridgeMetaedge = bridgegraph!.edge(bridgeEdgeObj);
 
       // Determine whether this bridge edge is incoming by checking the
       // metagraph for a node that matches the destination end.
@@ -1081,7 +1087,7 @@ export class RenderGraphInfo {
         // after its destination.
         let ordering = this.hierarchy.getTopologicalOrdering(topGroupNode.name);
         let e = topAdjoiningMetaedge.metaedge;
-        backwards = ordering[e.v] > ordering[e.w];
+        backwards = ordering[e.v] > ordering[e.w]; 
       }
 
       // Render backwards control edges as annotations.
@@ -1340,10 +1346,10 @@ export class RenderGraphInfo {
  * Annotation objects include embedded constants, embedded summary, and
  * edge shortcuts.
  */
-export class Annotation {
+export class Annotation implements EdgeData {
   node: Node;
   renderNodeInfo: RenderNodeInfo;
-  renderMetaedgeInfo: RenderMetaedgeInfo;
+  renderMetaedgeInfo: RenderMetaedgeInfo|null;
   annotationType: AnnotationType;
   /**
    * Center position of annotation relative to the host
@@ -1362,6 +1368,10 @@ export class Annotation {
    */
   v: string;
   w: string;
+
+  get label(): RenderMetaedgeInfo {
+    return this.renderMetaedgeInfo;
+  }
   /**
    * A flag whether it is an in-annotation (if true) or
    * out-annotation  (if false).
@@ -1393,6 +1403,9 @@ export class Annotation {
   constructor(node: Node, renderNodeInfo: RenderNodeInfo,
       renderMetaedgeInfo: RenderMetaedgeInfo, type: AnnotationType,
       isIn: boolean) {
+    
+    this.v=UNKNOWN;
+    this.w=UNKNOWN;
     this.node = node;
     this.renderNodeInfo = renderNodeInfo;
     this.renderMetaedgeInfo = renderMetaedgeInfo;
@@ -1681,7 +1694,7 @@ export class RenderMetaedgeInfo {
    * if any. This will be null for the edges which connect OpNodes to their
    * embeddings, for example.
    */
-  metaedge: Metaedge;
+  metaedge: Metaedge | null;
 
   /**
    * Reference to the adjoining RenderMetaedgeInfo from the parent's
@@ -1689,7 +1702,7 @@ export class RenderMetaedgeInfo {
    * edge should touch the node's bounding box. This property will be null for
    * edges which terminate at a node on both ends (all non-bridge edges).
    */
-  adjoiningMetaedge: RenderMetaedgeInfo;
+  adjoiningMetaedge: RenderMetaedgeInfo | null;
 
   /**
    * Most of the time, a RenderMetaedgeInfo object represents a real
@@ -1712,18 +1725,18 @@ export class RenderMetaedgeInfo {
    * X and Y coordinate pairs of the points in the path of the edge.
    * @see graph.node.subsceneAdjustPaths
    */
-  points: Point[];
+  points?: Point[];
 
   /**
    * D3 selection of the group containing the path that displays this edge.
    */
-  edgeGroup: d3.Selection<RenderMetaedgeInfo & any, any, any, any>;
+  edgeGroup?: d3.Selection<RenderMetaedgeInfo & any, any, any, any>;
 
   /** Id of the <marker> used as a start-marker for the edge path. */
-  startMarkerId: string;
+  startMarkerId?: string;
 
   /** Id of the <marker> used as an end-marker for the edge path. */
-  endMarkerId: string;
+  endMarkerId?: string;
 
   /**
    * Whether this edge is faded out. Used for fading out unused edges when
@@ -1731,7 +1744,7 @@ export class RenderMetaedgeInfo {
    */
   isFadedOut: boolean;
 
-  constructor(metaedge: Metaedge) {
+  constructor(metaedge: Metaedge | null) {
     this.metaedge = metaedge;
     this.adjoiningMetaedge = null;
     this.structural = false;
@@ -1941,7 +1954,7 @@ function extractSpecifiedNodes(renderNode: RenderGroupNodeInfo) {
   _.each(graph.nodes(), n => {
     let renderInfo = graph.node(n);
     if (renderInfo.node.include === InclusionType.EXCLUDE &&
-        !n.startsWith(graph.FUNCTION_LIBRARY_NODE_PREFIX)) {
+        !n.startsWith(FUNCTION_LIBRARY_NODE_PREFIX)) {
       // Move the node if the node is excluded and not part of the library
       // function scene group, which contains nodes that do not represent ops in
       // the graph and should thus never have its nodes added to the core graph.
@@ -2005,7 +2018,7 @@ function extractHighInOrOutDegree(renderNode: RenderGroupNodeInfo) {
     let inDegree =
         _.reduce(graph.predecessors(currentNode), (inDegree, pred) => {
           let metaedge = graph.edge(pred, currentNode).metaedge;
-          return inDegree + (metaedge.numRegularEdges ? 1 : 0);
+          return inDegree + (metaedge!.numRegularEdges ? 1 : 0);
         }, 0);
     if (inDegree === 0 && graph.predecessors(currentNode).length > 0) {
       inDegree = graph.predecessors(currentNode).length;
@@ -2014,7 +2027,7 @@ function extractHighInOrOutDegree(renderNode: RenderGroupNodeInfo) {
     let outDegree =
         _.reduce(graph.successors(currentNode), (outDegree, succ) => {
           let metaedge = graph.edge(currentNode, succ).metaedge;
-          return outDegree + (metaedge.numRegularEdges ? 1 : 0);
+          return outDegree + (metaedge!.numRegularEdges ? 1 : 0);
         }, 0);
     if (outDegree === 0 && graph.successors(currentNode).length > 0) {
       outDegree = graph.successors(currentNode).length;
@@ -2086,7 +2099,7 @@ function removeControlEdges(renderNode: RenderGroupNodeInfo) {
   // Collect control edges into a map by node name.
   let map = <{[nodeName: string]: graphlib.EdgeObject[]}>{};
   _.each(graph.edges(), e => {
-    if (!graph.edge(e).metaedge.numRegularEdges) {
+    if (!graph.edge(e).metaedge!.numRegularEdges) {
       (map[e.v] = map[e.v] || []).push(e);
       (map[e.w] = map[e.w] || []).push(e);
     }

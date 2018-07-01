@@ -1,3 +1,4 @@
+
 /* Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the 'License');
@@ -12,7 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.graph {
+ import * as _ from 'lodash';
+ import * as proto from './proto';
+  
+ import { runAsyncTask } from "./util";
+import { Hierarchy } from './hierarchy';
+import { ProgressTracker } from './common';
+
 
 /** Delimiter used in node names to denote namespaces. */
 export const NAMESPACE_DELIM = '/';
@@ -400,7 +407,7 @@ export class OpNodeImpl implements OpNode {
    *
    * @param rawNode The raw node.
    */
-  constructor(rawNode: tf.graph.proto.NodeDef) {
+  constructor(rawNode: proto.NodeDef) {
     this.op = rawNode.op;
     this.name = rawNode.name;
     this.device = rawNode.device;
@@ -434,7 +441,7 @@ export function createMetanode(name: string, opt = {}): Metanode {
  * graph information.
  */
 export function joinStatsInfoWithGraph(
-    graph: SlimGraph, stats: tf.graph.proto.StepStats,
+    graph: SlimGraph, stats: proto.StepStats,
     devicesForStats?: {[device: string]: boolean}): void {
   // Reset stats for each node.
   _.each(graph.nodes, node => { node.stats = null; });
@@ -692,7 +699,7 @@ export interface Metaedge extends graphlib.EdgeObject {
    * connect immediate children of the Metanode. None should have an inbound
    * property, or they should be null/undefined.
    */
-  inbound?: boolean;
+  inbound: boolean;
 
   /**
    * Number of regular edges (not control dependency edges).
@@ -715,7 +722,7 @@ export interface Metaedge extends graphlib.EdgeObject {
    */
   totalSize: number;
 
-  addBaseEdge(edge: BaseEdge, h: hierarchy.Hierarchy): void;
+  addBaseEdge(edge: BaseEdge, h: Hierarchy): void;
 }
 
 export function createMetaedge(v: string, w: string): Metaedge {
@@ -746,7 +753,7 @@ export class MetaedgeImpl implements Metaedge {
     this.totalSize = 0;
   }
 
-  addBaseEdge(edge: BaseEdge, h: hierarchy.Hierarchy): void {
+  addBaseEdge(edge: BaseEdge, h: Hierarchy): void {
     this.baseEdgeList.push(edge);
     if (edge.isControlDependency) {
       this.numControlEdges += 1;
@@ -762,7 +769,7 @@ export class MetaedgeImpl implements Metaedge {
     h.maxMetaEdgeSize = Math.max(h.maxMetaEdgeSize, this.totalSize);
   }
 
-  private static computeSizeOfEdge(edge: BaseEdge, h: hierarchy.Hierarchy):
+  private static computeSizeOfEdge(edge: BaseEdge, h: Hierarchy):
       number {
     let opNode = <OpNode> h.node(edge.v);
     if (!opNode.outputShapes) {
@@ -828,13 +835,13 @@ class SeriesNodeImpl implements SeriesNode {
   isGroupNode: boolean;
   cardinality: number;
   metagraph: graphlib.Graph<GroupNode|OpNode, Metaedge>;
-  bridgegraph: graphlib.Graph<GroupNode|OpNode, Metaedge>;
+  bridgegraph: graphlib.Graph<GroupNode|OpNode, Metaedge> | null;
   parentNode: Node;
   deviceHistogram: {[op: string]: number};
   compatibilityHistogram: {compatible: number, incompatible: number};
   hasNonControlEdges: boolean;
   include: InclusionType;
-  nodeAttributes: {[key: string]: any;};
+  nodeAttributes: proto.NodeAttributes;
 
   constructor(
       prefix: string,
@@ -871,7 +878,7 @@ class SeriesNodeImpl implements SeriesNode {
  */
 // tslint:disable-next-line:no-any
 function extractOutputShapes(attr: Array<{key: string, value: any}>):
-    {[key: string]: TensorShape;} {
+    {[key: string]: TensorShape;} | null {
   let result = null;
   // We don't know anything about the output tensors.
   if (!attr) {
@@ -886,7 +893,7 @@ function extractOutputShapes(attr: Array<{key: string, value: any}>):
       }
 
       // Map all output tensors into array of numbers denoting their shape.
-      let result = value.list.shape.map(shape => {
+      let result = value.list.shape.map((shape:any) => {
         if (shape.unknown_rank) {
           // This output tensor is of unknown rank. We don't know if it is a
           // scalar, or a tensor, or of what shape it is.
@@ -899,7 +906,7 @@ function extractOutputShapes(attr: Array<{key: string, value: any}>):
         }
         // This output tensor has a known rank. Map each dimension size
         // into a number.
-        return shape.dim.map(dim => {
+        return shape.dim.map((dim:any) => {
           // Size can be -1 if this particular dimension is unknown.
           return dim.size;
         });
@@ -1007,7 +1014,7 @@ function addEdgeToGraph(
 }
 
 export function build(
-    graphDef: tf.graph.proto.GraphDef, params: BuildParams,
+    graphDef:  proto.GraphDef, params: BuildParams,
     tracker: ProgressTracker): Promise<SlimGraph|void> {
   /**
    * A dictionary that maps each in-embedding node name to the node
@@ -1039,8 +1046,7 @@ export function build(
    */
   let nodeNames = new Array<string>(rawNodes.length);
 
-  return tf.graph.util
-      .runAsyncTask(
+  return runAsyncTask(
           'Normalizing names', 30,
           () => {
             let opNodes = new Array<OpNode>(rawNodes.length);
@@ -1074,7 +1080,7 @@ export function build(
 
             _.each(rawNodes, processRawNode);
 
-            const processFunction = (func: tf.graph.proto.FunctionDef) => {
+            const processFunction = (func: proto.FunctionDef) => {
               // Give the function itself a node.
               const functionNodeName =
                   FUNCTION_LIBRARY_NODE_PREFIX + func.signature.name;
@@ -1179,7 +1185,7 @@ export function build(
           tracker)
       .then((opNodes) => {
         // Create the graph data structure from the graphlib library.
-        return tf.graph.util.runAsyncTask(
+        return  runAsyncTask(
             'Building the data structure', 70, () => {
               let normalizedNameDict =
                   mapStrictHierarchy(nodeNames, embeddingNodeNames);
@@ -1404,7 +1410,7 @@ export function getHierarchicalPath(name: string,
  * on the provided current InclusionType.
  */
 export function getIncludeNodeButtonString(include: InclusionType) {
-  if (include === tf.graph.InclusionType.EXCLUDE) {
+  if (include === InclusionType.EXCLUDE) {
     return 'Add to main graph';
   } else {
     return 'Remove from main graph';
@@ -1416,7 +1422,7 @@ export function getIncludeNodeButtonString(include: InclusionType) {
  * on the provided current SeriesGroupingType.
  */
 export function getGroupSeriesNodeButtonString(group: SeriesGroupingType) {
-  if (group === tf.graph.SeriesGroupingType.GROUP) {
+  if (group === SeriesGroupingType.GROUP) {
     return 'Ungroup this series of nodes';
   } else {
     return 'Group this series of nodes';
@@ -1428,12 +1434,12 @@ export function getGroupSeriesNodeButtonString(group: SeriesGroupingType) {
  * to ungroup if the series is not already in the map.
  */
 export function toggleNodeSeriesGroup(
-  map: { [name: string]: tf.graph.SeriesGroupingType }, name: string) {
-  if (!(name in map) || map[name] === tf.graph.SeriesGroupingType.GROUP) {
-    map[name] = tf.graph.SeriesGroupingType.UNGROUP;
+  map: { [name: string]:  SeriesGroupingType }, name: string) {
+  if (!(name in map) || map[name] === SeriesGroupingType.GROUP) {
+    map[name] =  SeriesGroupingType.UNGROUP;
   } else {
-    map[name] = tf.graph.SeriesGroupingType.GROUP;
+    map[name] =  SeriesGroupingType.GROUP;
   }
 };
 
-} // close module tf.graph
+ 

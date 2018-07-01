@@ -385,8 +385,8 @@ function dagreLayout(
     // end-points by finding the intersection of a line between the
     // next-to-last (next-to-first) point and the destination (source)
     // rectangle.
-    let sourceNode = graph.node(edgeInfo.metaedge.v);
-    let destNode = graph.node(edgeInfo.metaedge.w);
+    let sourceNode = graph.node(edgeInfo.metaedge!.v);
+    let destNode = graph.node(edgeInfo.metaedge!.w);
 
     // Straight 3-points edges are special case, since they are curved after
     // our default correction. To keep them straight, we remove the mid point

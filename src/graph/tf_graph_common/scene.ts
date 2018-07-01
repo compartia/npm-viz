@@ -161,11 +161,14 @@ limitations under the License.
    * @param callback Called when the fitting is done.
    */
   export function fit(svg:any, zoomG:any, d3zoom:any, callback:any) {
+
+ 
     let svgRect = svg.getBoundingClientRect();
-    let sceneSize = null;
+    let sceneSize:SVGRect|null = null;
     try {
       sceneSize = zoomG.getBBox();
-      if (sceneSize.width === 0) {
+       
+      if (sceneSize!.width === 0) {
         // There is no scene anymore. We have been detached from the dom.
         return;
       }
@@ -174,9 +177,10 @@ limitations under the License.
       // detached from the dom.
       return;
     }
+    
     let scale = 0.9 *
         Math.min(
-            svgRect.width / sceneSize.width, svgRect.height / sceneSize.height,
+            svgRect.width / sceneSize!.width, svgRect.height / sceneSize!.height,
             2);
     let params = layout.PARAMS.graph;
     const transform = d3.zoomIdentity
@@ -644,7 +648,7 @@ function _getHealthPillTextContent(healthPill: HealthPill,
   text += '\nshape: ' + shapeStr + '\n\n';
 
   text += '#(elements): ' + totalCount + '\n';
-  const breakdownItems = [];
+  const breakdownItems: string[] = [];
   for (let i = 0; i < elementsBreakdown.length; i++) {
     if (elementsBreakdown[i] > 0) {
       breakdownItems.push(

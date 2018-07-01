@@ -44,8 +44,8 @@ import * as _ from 'lodash';
    * property is an object with a numerical 'value' property and a
    * string 'msg' property.
    */
-  export function getTracker(polymerComponent: any) {
-    return {
+  export function getTracker(polymerComponent: any): ProgressTracker {
+    return <ProgressTracker>{
       setMessage: function(msg:string) {
         polymerComponent.set(
             'progress', {value: polymerComponent.progress.value, msg: msg});
