@@ -1,7 +1,7 @@
 import "polymer/polymer.html";
 import {customElement, property} from 'taktik-polymer-typescript';
 import './npm-deps-graph.html'
-import '../graph/tf-graph'
+import '../graph/components/tf-graph'
 
 /**
  * MyApp main class.

@@ -74,11 +74,12 @@ module.exports = {
 
         new Clean(['build']),
     ],
+     
     devServer: {
-    contentBase: path.join(__dirname),
-        compress: fasle,//true,
-        overlay: true,
-        port: 9000,
-        setup: setupServerMockup,
-},
+        contentBase: path.join(__dirname),
+            compress: true,
+            overlay: true,
+            port: 9000,
+            setup: setupServerMockup,
+    },
 };

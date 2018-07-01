@@ -3,19 +3,52 @@ import * as _ from 'lodash';
 import "polymer/polymer.html";
 import { customElement, property } from 'taktik-polymer-typescript';
 import './tf-graph-scene.html';
-import * as graph from './tf_graph_common/graph';
-import * as layout from './tf_graph_common/layout';
-import { Minimap } from "./tf_graph_common/minimap";
-import * as node from './tf_graph_common/node';
-import { RenderGraphInfo, RenderNodeInfo } from "./tf_graph_common/render";
-import * as scene from './tf_graph_common/scene';
-import * as util from './tf_graph_common/util';
+import * as graph from '../tf_graph_common/graph';
+import * as layout from '../tf_graph_common/layout';
+import { Minimap } from "../tf_graph_common/minimap";
+import * as node from '../tf_graph_common/node';
+import { RenderGraphInfo, RenderNodeInfo } from "../tf_graph_common/render";
+import * as scene from '../tf_graph_common/scene';
+import * as util from '../tf_graph_common/util';
 import './tf-graph-minimap'
 
 
 
 @customElement('graph-scene')
 export class GraphScene extends Polymer.Element {
+
+
+    // An optional callback that implements the tf.graph.edge.EdgeSelectionCallback signature. If
+    // provided, edges are selectable, and this callback is run when an edge is selected.
+    @property({ type: Object })
+    handleEdgeSelected: any;
+
+    /**
+     * Keeps track of the starting coordinates of a graph zoom/pan.
+     *
+     * @private {{x: number, y: number}?}
+     */
+    @property({ type: Object })
+    _zoomStartCoords: any = null;
+    /**
+     * Keeps track of the current coordinates of a graph zoom/pan
+     *
+     * @private {{x: number, y: number}?}
+     */
+    @property({ type: Object })
+    _zoomTransform: any = null;
+
+    /** Maximum distance of a zoom event for it to be interpreted as a click */
+    @property({ type: Number })
+    _maxZoomDistanceForClick = 20;
+
+    /**
+     * Max font size for metanode label strings.
+     */
+    @property({ type: Number })
+    maxMetanodeLabelLengthFontSize = 9;
+
+
 
     /**
      * Min font size for metanode label strings.
@@ -169,15 +202,15 @@ export class GraphScene extends Polymer.Element {
     };
 
     private _updateLabels(showLabels: boolean) {
-        
-        let mainGraphTitleElement = this.$.title; 
-         
+
+        let mainGraphTitleElement = this.$.title;
+
         let titleStyle = mainGraphTitleElement.style;
-        let auxTitleElement =this.$.auxTitle;  
+        let auxTitleElement = this.$.auxTitle;
         let auxTitleStyle = auxTitleElement.style;
-        
+
         let functionLibraryTitleStyle = this.$.functionLibraryTitle.style;
-            let core = <SVGGraphicsElement>d3.select("." + scene.Class.Scene.GROUP + ">." +
+        let core = <SVGGraphicsElement>d3.select("." + scene.Class.Scene.GROUP + ">." +
             scene.Class.Scene.CORE).node();
         // Only show labels if the graph is fully loaded.
         if (showLabels && core && this.progress && this.progress.value === 100) {
@@ -229,48 +262,7 @@ export class GraphScene extends Polymer.Element {
     }
 
 
-    public properties = {
 
-        // An optional callback that implements the tf.graph.edge.EdgeSelectionCallback signature. If
-        // provided, edges are selectable, and this callback is run when an edge is selected.
-        handleEdgeSelected: Object,
-
-
-        /**
-         * Keeps track of the starting coordinates of a graph zoom/pan.
-         *
-         * @private {{x: number, y: number}?}
-         */
-        _zoomStartCoords: {
-            type: Object,
-            value: null
-        },
-        /**
-         * Keeps track of the current coordinates of a graph zoom/pan
-         *
-         * @private {{x: number, y: number}?}
-         */
-        _zoomTransform: {
-            type: Object,
-            value: null
-        },
-        /** Maximum distance of a zoom event for it to be interpreted as a click */
-        _maxZoomDistanceForClick: {
-            type: Number,
-            value: 20
-        },
-
-
-        /**
-         * Max font size for metanode label strings.
-         */
-        maxMetanodeLabelLengthFontSize: {
-            type: Number,
-            value: 9
-        },
-
-
-    };
 
 
     public observers = [

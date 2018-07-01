@@ -1,7 +1,6 @@
 import "polymer/polymer.html";
 import { customElement, property } from 'taktik-polymer-typescript';
 import './tf-graph.html'
-
 import './tf-graph-scene'
 
 

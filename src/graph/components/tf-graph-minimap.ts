@@ -2,7 +2,7 @@
 import "polymer/polymer.html";
 import { customElement } from 'taktik-polymer-typescript';
 import './tf-graph-minimap.html';
-import { Minimap } from "./tf_graph_common/minimap";
+import { Minimap } from "../tf_graph_common/minimap";
 
 
 @customElement('tf-graph-minimap')
