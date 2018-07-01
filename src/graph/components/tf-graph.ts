@@ -4,6 +4,7 @@ import './tf-graph.html'
 import './tf-graph-scene'
 
 
+
 @customElement('tf-graph')
 export class TfGraphElement extends Polymer.Element {
 

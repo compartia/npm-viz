@@ -13,7 +13,6 @@ import * as util from '../tf_graph_common/util';
 import './tf-graph-minimap'
 
 
-
 @customElement('graph-scene')
 export class GraphScene extends Polymer.Element {
 
@@ -346,7 +345,7 @@ export class GraphScene extends Polymer.Element {
                 // done to translate the graph around.
                 if (!this._zoomStartCoords) {
                     this._zoomStartCoords = this._zoomTransform;
-                    this.fire('disable-click');
+                    this.dispatchEvent(new Event('disable-click'));
                 }
                 this._zoomed = true;
                 d3.select(this.$.root).attr('transform', d3.event.transform);
