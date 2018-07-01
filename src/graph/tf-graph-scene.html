@@ -14,19 +14,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-
+<!-- 
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../tf-graph-common/tf-graph-common.html">
 <link rel="import" href="../tf-dashboard-common/tensorboard-color.html">
-<link rel="import" href="tf-graph-minimap.html">
+<link rel="import" href="tf-graph-minimap.html"> -->
 
 <!--
   A module that takes a render hierarchy as input and produces an SVG DOM using
   dagre and d3.
 -->
-<dom-module id="tf-graph-scene">
+<dom-module id="graph-scene">
 <template>
-<style>
+<custom-style>
+        
+<style is="custom-style">
 :host {
   display: flex;
   width: 100%;
@@ -525,11 +527,15 @@ limitations under the License.
   bottom: 20px;
 }
 </style>
+
+</custom-style>
+
 <div class="titleContainer">
   <div id="title" class="title">Main Graph</div>
   <div id="auxTitle" class="auxTitle">Auxiliary Nodes</div>
   <div id="functionLibraryTitle" class="functionLibraryTitle">Functions</div>
 </div>
+
 <svg id="svg">
   <defs>
 

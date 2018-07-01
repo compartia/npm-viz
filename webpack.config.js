@@ -76,7 +76,7 @@ module.exports = {
     ],
     devServer: {
     contentBase: path.join(__dirname),
-        compress: true,
+        compress: fasle,//true,
         overlay: true,
         port: 9000,
         setup: setupServerMockup,

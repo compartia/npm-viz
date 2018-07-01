@@ -12,7 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.scene {
+ 
+import * as d3 from 'd3';
 
 /** Show minimap when the viewpoint area is less than X% of the whole area. */
 const FRAC_VIEWPOINT_AREA: number = 0.8;
@@ -339,4 +340,4 @@ export class Minimap {
   }
 }
 
-} // close module tf.scene
+ 

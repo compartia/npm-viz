@@ -1,0 +1,27 @@
+<dom-module id="tf-graph">
+
+  <template>
+    <custom-style>
+      <style is="custom-style">
+        :host {}
+      </style>
+    </custom-style>
+
+    <div class="container">
+      tf-graph
+    </div>
+
+    <graph-scene id="scene" class="auto"
+    render-hierarchy="[[renderHierarchy]]"
+    highlighted-node="[[_getVisible(highlightedNode)]]"
+    selected-node="{{selectedNode}}"
+    selected-edge="{{selectedEdge}}"
+    color-by="[[colorBy]]"
+    progress="[[progress]]"
+    node-context-menu-items="[[nodeContextMenuItems]]"
+    node-names-to-health-pills="[[nodeNamesToHealthPills]]"
+    health-pill-step-index="{{healthPillStepIndex}}"
+    handle-edge-selected="[[handleEdgeSelected]]"
+></graph-scene>
+  </template>
+</dom-module>

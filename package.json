@@ -38,6 +38,7 @@
     "clean-webpack-plugin": "^0.1.19",
     "copy-webpack-plugin": "^4.5.1",
     "d3": "4.9.1",
+    "dagre": "^0.8.2",
     "file-loader": "^1.1.11",
     "graphlib": "^2.1.5",
     "html-includer-webpack-plugin": "^1.0.0-beta2",

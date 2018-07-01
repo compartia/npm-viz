@@ -1,6 +1,7 @@
 import "polymer/polymer.html";
 import {customElement, property} from 'taktik-polymer-typescript';
 import './npm-deps-graph.html'
+import '../graph/tf-graph'
 
 /**
  * MyApp main class.
@@ -13,7 +14,7 @@ export class NpmDepsGraph extends Polymer.Element {
    * A property call myProperty
    * @type {string}
    */
-@property({type: String})
+  @property({type: String})
   myProperty: string = 'an application scaffolds with love';
 }
 
