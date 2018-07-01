@@ -1,3 +1,12 @@
+import * as d3 from 'd3';
+import * as _ from 'lodash';
+import { NodeType, OpNode } from "./graph";
+import * as layout from './layout';
+import { RenderGroupNodeInfo, RenderNodeInfo } from "./render";
+
+import * as node from './node';
+import * as edge from './edge';
+
 /* Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the 'License');
@@ -12,7 +21,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.graph.scene {
+ 
   export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
   /** Enums element class of objects in the scene */
@@ -151,12 +160,15 @@ module tf.graph.scene {
    * @param d3zoom The zoom behavior.
    * @param callback Called when the fitting is done.
    */
-  export function fit(svg, zoomG, d3zoom, callback) {
+  export function fit(svg:any, zoomG:any, d3zoom:any, callback:any) {
+
+ 
     let svgRect = svg.getBoundingClientRect();
-    let sceneSize = null;
+    let sceneSize:SVGRect|null = null;
     try {
       sceneSize = zoomG.getBBox();
-      if (sceneSize.width === 0) {
+       
+      if (sceneSize!.width === 0) {
         // There is no scene anymore. We have been detached from the dom.
         return;
       }
@@ -165,9 +177,10 @@ module tf.graph.scene {
       // detached from the dom.
       return;
     }
+    
     let scale = 0.9 *
         Math.min(
-            svgRect.width / sceneSize.width, svgRect.height / sceneSize.height,
+            svgRect.width / sceneSize!.width, svgRect.height / sceneSize!.height,
             2);
     let params = layout.PARAMS.graph;
     const transform = d3.zoomIdentity
@@ -198,7 +211,7 @@ module tf.graph.scene {
  * @return True if the graph had to be panned to display the
  *            provided node.
  */
-export function panToNode(nodeName: String, svg, zoomG, d3zoom): boolean {
+export function panToNode(nodeName: String, svg:any, zoomG:any, d3zoom:any): boolean {
   let node = <SVGAElement>d3
                  .select('[data-name="' + nodeName + '"].' + Class.Node.GROUP)
                  .node();
@@ -218,7 +231,7 @@ export function panToNode(nodeName: String, svg, zoomG, d3zoom): boolean {
   pointBR.y = nodeBox.y + nodeBox.height;
   pointTL = pointTL.matrixTransform(nodeCtm);
   pointBR = pointBR.matrixTransform(nodeCtm);
-  let isOutsideOfBounds = (start, end, lowerBound, upperBound) => {
+  let isOutsideOfBounds = (start:number, end:number, lowerBound:number, upperBound:number) => {
     // Return if even a part of the interval is out of bounds.
     return !(start > lowerBound && end < upperBound);
   };
@@ -264,7 +277,7 @@ export function panToNode(nodeName: String, svg, zoomG, d3zoom): boolean {
  * @return selection of the element
  */
 export function selectOrCreateChild(
-    container, tagName: string, className?: string | string[], before?): d3.Selection<any, any, any, any> {
+    container:any, tagName: string, className?: string | string[], before?:any): d3.Selection<any, any, any, any> {
   let child = selectChild(container, tagName, className);
   if (!child.empty()) {
     return child;
@@ -277,7 +290,7 @@ export function selectOrCreateChild(
       newElement.classList.add(className[i]);
     }
   } else {
-    newElement.classList.add(className);
+    newElement.classList.add(<string>className);
   }
 
   if (before) { // if before exists, insert
@@ -301,7 +314,7 @@ export function selectOrCreateChild(
  * @return selection of the element, or an empty selection
  */
 export function selectChild(
-    container, tagName: string, className?: string | string[]): d3.Selection<any, any, any, any> {
+    container:any, tagName: string, className?: string | string[]): d3.Selection<any, any, any, any> {
   let children = container.node().childNodes;
   for (let i = 0; i < children.length; i++) {
     let child = children[i];
@@ -354,10 +367,11 @@ export function selectChild(
  * @param sceneElement <tf-graph-scene> polymer element.
  * @param sceneClass class attribute of the scene (default='scene').
  */
-export function buildGroup(container,
-    renderNode: render.RenderGroupNodeInfo,
-    sceneElement,
+export function buildGroup(container:any,
+    renderNode:   RenderGroupNodeInfo,
+    sceneElement:any,
     sceneClass: string): d3.Selection<any, any, any, any> {
+
   sceneClass = sceneClass || Class.Scene.GROUP;
   let isNewSceneGroup = selectChild(container, 'g', sceneClass).empty();
   let sceneGroup = selectOrCreateChild(container, 'g', sceneClass);
@@ -365,9 +379,9 @@ export function buildGroup(container,
   // core
   let coreGroup = selectOrCreateChild(sceneGroup, 'g', Class.Scene.CORE);
   let coreNodes = _.reduce(renderNode.coreGraph.nodes(), (nodes, name) => {
-                    let node = renderNode.coreGraph.node(name);
-                    if (!node.excluded) {
-                      nodes.push(node);
+                    let _node = renderNode.coreGraph.node(name);
+                    if (!_node.excluded) {
+                      nodes.push(<never>_node);
                     }
                     return nodes;
                   }, []);
@@ -432,7 +446,7 @@ export function buildGroup(container,
  * @param sceneGroup
  * @param renderNode render node of a metanode or series node.
  */
-function position(sceneGroup, renderNode: render.RenderGroupNodeInfo) {
+function position(sceneGroup:any, renderNode: RenderGroupNodeInfo) {
   // Translate scenes down by the label height so that when showing graphs in
   // expanded metanodes, the graphs are below the labels.  Do not shift them
   // down for series nodes as series nodes don't have labels inside of their
@@ -504,14 +518,14 @@ function position(sceneGroup, renderNode: render.RenderGroupNodeInfo) {
 };
 
 /** Adds a click listener to a group that fires a graph-select event */
-export function addGraphClickListener(graphGroup, sceneElement) {
+export function addGraphClickListener(graphGroup:any, sceneElement:any) {
   d3.select(graphGroup).on('click', () => {
     sceneElement.fire('graph-select');
   });
 };
 
 /** Helper for adding transform: translate(x0, y0) */
-export function translate(selection, x0: number, y0: number) {
+export function translate(selection:any, x0: number, y0: number) {
   // If it is already placed on the screen, make it a transition.
   if (selection.attr('transform') != null) {
     selection = selection.transition('position');
@@ -527,7 +541,7 @@ export function translate(selection, x0: number, y0: number) {
  * @param width Width to set.
  * @param height Height to set.
  */
-export function positionRect(rect, cx: number, cy: number, width: number,
+export function positionRect(rect:any, cx: number, cy: number, width: number,
     height: number) {
   rect.transition()
     .attr('x', cx - width / 2)
@@ -544,7 +558,7 @@ export function positionRect(rect, cx: number, cy: number, width: number,
  * @param width Width of bounding box for triangle.
  * @param height Height of bounding box for triangle.
  */
-export function positionTriangle(polygon, cx, cy, width, height) {
+export function positionTriangle(polygon:any, cx:number, cy:number, width:number, height:number) {
   const halfHeight = height / 2;
   const halfWidth = width / 2;
   const points = [
@@ -562,7 +576,7 @@ export function positionTriangle(polygon, cx, cy, width, height) {
  * @param renderNode the render node of the group node to position
  *        the button on.
  */
-export function positionButton(button, renderNode: render.RenderNodeInfo) {
+export function positionButton(button:any, renderNode:  RenderNodeInfo) {
   let cx = layout.computeCXPositionOfNodeShape(renderNode);
   // Position the button in the top-right corner of the group node,
   // with space given the draw the button inside of the corner.
@@ -592,7 +606,7 @@ export function positionButton(button, renderNode: render.RenderNodeInfo) {
  * @param width Width to set.
  * @param height Height to set.
  */
-export function positionEllipse(ellipse, cx: number, cy: number,
+export function positionEllipse(ellipse:any, cx: number, cy: number,
     width: number, height: number) {
   ellipse.transition()
     .attr('cx', cx)
@@ -607,7 +621,7 @@ export function positionEllipse(ellipse, cx: number, cy: number,
  *     ones digit. Useful for say int, uint, and bool output types.
  * @return {string} A human-friendly string representation of that stat.
  */
-export function humanizeHealthPillStat(stat, shouldRoundOnesDigit) {
+export function humanizeHealthPillStat(stat:any, shouldRoundOnesDigit:any) {
   if (shouldRoundOnesDigit) {
     return stat.toFixed(0);
   }
@@ -634,7 +648,7 @@ function _getHealthPillTextContent(healthPill: HealthPill,
   text += '\nshape: ' + shapeStr + '\n\n';
 
   text += '#(elements): ' + totalCount + '\n';
-  const breakdownItems = [];
+  const breakdownItems: string[] = [];
   for (let i = 0; i < elementsBreakdown.length; i++) {
     if (elementsBreakdown[i] > 0) {
       breakdownItems.push(
@@ -668,8 +682,8 @@ function _getHealthPillTextContent(healthPill: HealthPill,
  *   default to `healthPillWidth / 2`.
  */
 export function addHealthPill(
-    nodeGroupElement: SVGElement, healthPill: HealthPill,
-    nodeInfo: render.RenderNodeInfo, healthPillId: number,
+    nodeGroupElement: SVGElement, healthPill: HealthPill | null,
+    nodeInfo:  RenderNodeInfo, healthPillId: number,
     healthPillWidth = 60, healthPillHeight = 10, healthPillYOffset = 0,
     textXOffset?: number) {
   // Check if text already exists at location.
@@ -704,7 +718,7 @@ export function addHealthPill(
   if (healthPillYOffset == null) {
     healthPillYOffset = 0;
   }
-  if (nodeInfo != null && nodeInfo.node.type === tf.graph.NodeType.OP) {
+  if (nodeInfo != null && nodeInfo.node.type ===  NodeType.OP) {
     // Use a smaller health pill for op nodes (rendered as smaller ellipses).
     healthPillWidth /= 2;
     healthPillHeight /= 2;
@@ -836,7 +850,8 @@ export function addHealthPill(
   statsSvg.setAttribute('y', String(healthPillYOffset - 2));
   healthPillGroup.appendChild(statsSvg);
 
-  Polymer.dom(nodeGroupElement.parentNode).appendChild(healthPillGroup);
+  if(nodeGroupElement.parentNode)
+    nodeGroupElement.parentNode.appendChild(healthPillGroup);
 }
 
 /**
@@ -860,7 +875,7 @@ export function addHealthPills(
 
   let svgRootSelection = d3.select(svgRoot);
   svgRootSelection.selectAll('g.nodeshape')
-      .each(function(nodeInfo: render.RenderNodeInfo) {
+      .each(function(nodeInfo: any) {
         // Only show health pill data for this node if it is available.
         const healthPills = nodeNamesToHealthPills[nodeInfo.node.name];
         const healthPill =
@@ -870,4 +885,4 @@ export function addHealthPills(
       });
 };
 
-} // close module
+ 

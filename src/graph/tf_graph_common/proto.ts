@@ -13,20 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-/**
- * @fileoverview Interfaces that parallel proto definitions in
- * third_party/tensorflow/core/framework/...
- *     graph.proto
- *     step_stats.proto
- * These should stay in sync.
- * 
- * When adding a repeated field to this file, make sure to update the
- * GRAPH_REPEATED_FIELDS and METADATA_REPEATED_FIELDS lists within parser.ts.
- * Otherwise, the parser has no way of differentiating between a field with a
- * certain value and a repeated field that has only 1 occurence, resulting in
- * subtle bugs.
- */
-module tf.graph.proto {
+
+  export interface NodeAttributes{
+    label: string;    
+    state: string;//represents node color
+  }
+
+ 
   /**
    * TensorFlow node definition as defined in the graph.proto file.
    */
@@ -35,13 +28,15 @@ module tf.graph.proto {
     name: string;
     /** List of nodes that are inputs for this node. */
     input: string[];
+    output: string[];
     /** The name of the device where the computation will run. */
     device: string;
     /** The name of the operation associated with this node. */
     op: string;
     /** List of attributes that describe/modify the operation. */
-    attr: {key: string, value: Object}[];
+    attr:{ key: string; value: any; }[]; 
   }
+
 
   /**
    * Describes a version of TensorFlow.
@@ -56,6 +51,7 @@ module tf.graph.proto {
     // Specific consumer versions which are disallowed (e.g. due to bugs).
     bad_consumers: number[];
   };
+
 
   /**
    * Specifies an argument. An argument is either an input or an output of a
@@ -75,8 +71,8 @@ module tf.graph.proto {
     name: string;
     input_arg: ArgDef[];
     output_arg: ArgDef[];
-  };
-
+  }; 
+  
   /**
    * Describes a single function within the library.
    */
@@ -146,7 +142,7 @@ module tf.graph.proto {
     /** Attributes of a metanode. */
     metanode_attr: Array<{[key: string]: any}>;
   }
-
+  
   /**
    * TensorFlow stats file definition as defined in the stats proto file.
    */
@@ -214,4 +210,6 @@ module tf.graph.proto {
       };
     };
   }
-}
+
+
+  

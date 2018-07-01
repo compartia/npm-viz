@@ -14,12 +14,11 @@ limitations under the License.
 ==============================================================================*/
 
 
-/* tslint:disable:no-namespace */
-module tf.graph.test.util {
+ 
   /**
    * Converts a utf-8 string to an ArrayBuffer.
    */
-  export function stringToArrayBuffer(str): ArrayBuffer {
+  export function stringToArrayBuffer(str:string): ArrayBuffer {
     let buf = new ArrayBuffer(str.length);
     let bufView = new Uint8Array(buf);
     for (let i = 0, strLen = str.length; i < strLen; i++) {
@@ -28,4 +27,4 @@ module tf.graph.test.util {
     return buf;
   }
 
-}  // module
+ 
