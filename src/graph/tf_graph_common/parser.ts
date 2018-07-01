@@ -1,3 +1,7 @@
+import { ProgressTracker } from "./common";
+import * as proto from './proto';
+import * as util from './util';
+
 /* Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the 'License');
@@ -12,7 +16,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.graph.parser {
+
 
 /**
  * Parses a native js value, which can be either a string, boolean or number.
@@ -54,7 +58,7 @@ export function fetchPbTxt(filepath: string): Promise<ArrayBuffer> {
  * Fetches the metadata file, parses it and returns a promise of the result.
  */
 export function fetchAndParseMetadata(path: string, tracker: ProgressTracker) {
-  return tf.graph.util
+  return util
       .runTask(
           'Reading metadata pbtxt', 40,
           () => {
@@ -65,7 +69,7 @@ export function fetchAndParseMetadata(path: string, tracker: ProgressTracker) {
           },
           tracker)
       .then((arrayBuffer: ArrayBuffer) => {
-        return tf.graph.util.runAsyncPromiseTask(
+        return  util.runAsyncPromiseTask(
             'Parsing metadata.pbtxt', 60, () => {
               return arrayBuffer != null ? parseStatsPbTxt(arrayBuffer) :
                                            Promise.resolve(null);
@@ -79,7 +83,7 @@ export function fetchAndParseMetadata(path: string, tracker: ProgressTracker) {
  */
 export function fetchAndParseGraphData(path: string, pbTxtFile: Blob,
     tracker: ProgressTracker) {
-  return tf.graph.util
+  return util
       .runTask(
           'Reading graph pbtxt', 40,
           () => {
@@ -96,7 +100,7 @@ export function fetchAndParseGraphData(path: string, pbTxtFile: Blob,
           },
           tracker)
       .then((arrayBuffer: ArrayBuffer) => {
-        return tf.graph.util.runTask('Parsing graph.pbtxt', 60, () => {
+        return util.runTask('Parsing graph.pbtxt', 60, () => {
           return parseGraphPbTxt(arrayBuffer);
         }, tracker);
       });
@@ -112,14 +116,14 @@ export function fetchAndParseGraphData(path: string, pbTxtFile: Blob,
  * @returns A promise for when it is finished.
  */
 export function streamParse(
-    arrayBuffer: ArrayBuffer, callback: (string) => void,
+    arrayBuffer: ArrayBuffer, callback: (string:string) => void,
     chunkSize: number = 1000000, delim: string = '\n'): Promise<boolean> {
   return new Promise<boolean>(function(resolve, reject) {
     let offset = 0;
     let bufferSize = arrayBuffer.byteLength - 1;
     let data = '';
 
-    function readHandler(str) {
+    function readHandler(str:string) {
       offset += chunkSize;
       let parts = str.split(delim);
       let first = data + parts[0];
@@ -193,7 +197,7 @@ const METADATA_REPEATED_FIELDS: {[attrPath: string]: boolean} = {
  * Parses an ArrayBuffer of a proto txt file into a raw Graph object.
  */
 export function parseGraphPbTxt(input: ArrayBuffer):
-    Promise<tf.graph.proto.GraphDef> {
+    Promise<proto.GraphDef> {
   return parsePbtxtFile(input, GRAPH_REPEATED_FIELDS);
 }
 
@@ -201,7 +205,7 @@ export function parseGraphPbTxt(input: ArrayBuffer):
  * Parses an ArrayBuffer of a proto txt file into a StepStats object.
  */
 export function parseStatsPbTxt(input: ArrayBuffer):
-    Promise<tf.graph.proto.StepStats> {
+    Promise<proto.StepStats> {
   return parsePbtxtFile(input, METADATA_REPEATED_FIELDS)
       .then(obj => obj['step_stats']);
 }
@@ -218,7 +222,7 @@ function parsePbtxtFile(
     input: ArrayBuffer,
     repeatedFields: {[attrPath: string]: boolean}): Promise<any> {
   let output: { [name: string]: any; } = {};
-  let stack = [];
+  let stack:any[] = [];
   let path: string[] = [];
   let current: { [name: string]: any; } = output;
 
@@ -243,7 +247,7 @@ function parsePbtxtFile(
    * @param path A path that identifies the attribute. Used to check if
    *     an attribute is an array or not.
    */
-  function addAttribute(obj: Object, name: string,
+  function addAttribute(obj: {[key:string]:any}, name: string,
       value: Object|string|number|boolean, path: string[]): void {
     // We treat 'node' specially since it is done so often.
     let existingValue = obj[name];
@@ -286,4 +290,4 @@ function parsePbtxtFile(
   });
 }
 
-} // Close module tf.graph.parser.
+
