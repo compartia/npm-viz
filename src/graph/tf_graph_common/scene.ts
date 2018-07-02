@@ -576,7 +576,7 @@ export function positionTriangle(polygon:any, cx:number, cy:number, width:number
  * @param renderNode the render node of the group node to position
  *        the button on.
  */
-export function positionButton(button:any, renderNode:  RenderNodeInfo) {
+export function positionButton(button:d3.Selection<any,any,any,any>, renderNode:  RenderNodeInfo) {
   let cx = layout.computeCXPositionOfNodeShape(renderNode);
   // Position the button in the top-right corner of the group node,
   // with space given the draw the button inside of the corner.
@@ -593,9 +593,10 @@ export function positionButton(button:any, renderNode:  RenderNodeInfo) {
     y -= 2;
   }
   let translateStr = 'translate(' + x + ',' + y + ')';
-  button.selectAll('path').transition().attr('transform', translateStr);
-  button.select('circle').transition().attr(
-      {cx: x, cy: y, r: layout.PARAMS.nodeSize.meta.expandButtonRadius});
+  button.selectAll('path')
+    .transition().attr('transform', translateStr);
+  button.select('circle')
+    .transition().attr('cx', x).attr('cy', y).attr('r', layout.PARAMS.nodeSize.meta.expandButtonRadius);
 };
 
 /**
