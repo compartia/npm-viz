@@ -246,6 +246,7 @@ export class TfGraphElement extends Polymer.Element {
     return this.renderHierarchy.getNearestVisibleAncestor(name);
   }
 
+  static
   listeners= {
     'graph-select': '_graphSelected',
     'disable-click': '_disableClick',
@@ -461,6 +462,20 @@ export class TfGraphElement extends Polymer.Element {
   }
   public not(x) {
     return !x;
+  }
+
+  public ready() {
+    super.ready();
+ 
+    _.toPairs(TfGraphElement.listeners).forEach(pair => {
+      let listener = (e) => {
+        //console.error(e);
+        this[pair[1]](e);
+      }
+       
+      this.$.scene.addEventListener(pair[0], listener);
+
+    });
   }
 }
 

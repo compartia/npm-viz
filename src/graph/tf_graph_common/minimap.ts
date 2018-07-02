@@ -140,6 +140,12 @@ export class Minimap {
    * was updated (e.g. when a node was expanded).
    */
   update(): void {
+
+    if(true){
+      console.error("TODO");
+      return;
+    }
+
     let sceneSize:SVGRect|null = null;
     try {
       // Get the size of the entire scene.

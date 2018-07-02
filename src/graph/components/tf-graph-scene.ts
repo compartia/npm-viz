@@ -201,7 +201,7 @@ export class GraphScene extends Polymer.Element {
     };
 
     private _updateLabels(showLabels: boolean) {
-
+        const _root=d3.select(this.$.root);
         let mainGraphTitleElement = this.$.title;
 
         let titleStyle = mainGraphTitleElement.style;
@@ -209,14 +209,14 @@ export class GraphScene extends Polymer.Element {
         let auxTitleStyle = auxTitleElement.style;
 
         let functionLibraryTitleStyle = this.$.functionLibraryTitle.style;
-        let core = <SVGGraphicsElement>d3.select("." + scene.Class.Scene.GROUP + ">." +
+        let core = <SVGGraphicsElement>_root.select("." + scene.Class.Scene.GROUP + ">." +
             scene.Class.Scene.CORE).node();
         // Only show labels if the graph is fully loaded.
         if (showLabels && core && this.progress && this.progress.value === 100) {
             let aux: any =
-                d3.select("." + scene.Class.Scene.GROUP + ">." +
+                _root.select("." + scene.Class.Scene.GROUP + ">." +
                     scene.Class.Scene.INEXTRACT).node() ||
-                d3.select("." + scene.Class.Scene.GROUP + ">." +
+                _root.select("." + scene.Class.Scene.GROUP + ">." +
                     scene.Class.Scene.OUTEXTRACT).node();
             let coreX = core.getCTM().e;
             let auxX = aux ? aux.getCTM().e : null;
@@ -296,7 +296,7 @@ export class GraphScene extends Polymer.Element {
         util.time('tf-graph-scene (build scene):', () => {
             scene.buildGroup(d3.select(this.$.root), renderHierarchy.root, this, null);
             scene.addGraphClickListener(this.$.svg, this);
-            node.traceInputs(renderHierarchy);
+            node.traceInputs(d3.select(this.$.svg), renderHierarchy);
         });
 
         // Update the minimap again when the graph is done animating.
@@ -373,7 +373,8 @@ export class GraphScene extends Polymer.Element {
     }
 
     public fire(eventName:string, value:any ):void{
-        this.dispatchEvent(new Event(eventName, value));
+        console.log("firing "+eventName);
+        this.dispatchEvent(new CustomEvent(eventName, {bubbles: true,  detail:value}));
     }
 
     private _renderHierarchyChanged(renderHierarchy: RenderGraphInfo) {
@@ -509,7 +510,7 @@ export class GraphScene extends Polymer.Element {
             this._updateNodeState(oldSelectedNode);
         }
 
-        node.traceInputs(this.renderHierarchy);
+        node.traceInputs(d3.select(this.$.svg),this.renderHierarchy);
 
         if (!selectedNode) {
             return;
