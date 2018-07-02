@@ -246,6 +246,7 @@ export class TfGraphElement extends Polymer.Element {
     return this.renderHierarchy.getNearestVisibleAncestor(name);
   }
 
+  static
   listeners= {
     'graph-select': '_graphSelected',
     'disable-click': '_disableClick',
@@ -310,7 +311,8 @@ export class TfGraphElement extends Polymer.Element {
   // Called when the selected edge changes, ie there is a new selected edge or
   // the current one is unselected.
   private _selectedEdgeChanged(selectedEdge) {
-    this._deselectPreviousEdge();
+    throw("unimplemented");
+    this._deselectPreviousEdge(d3.select(this.$.scene.$.svg));
 
     // Visually mark this new edge as selected.
     if (selectedEdge) {
@@ -415,10 +417,10 @@ export class TfGraphElement extends Polymer.Element {
     }.bind(this));
   }
 
-  private _deselectPreviousEdge() {
+  private _deselectPreviousEdge(_svg) {
     const selectedSelector = '.' +  scene.Class.Edge.SELECTED;
     // Visually mark the previously selected edge (if any) as deselected.
-    d3.select(selectedSelector)
+    _svg.select(selectedSelector)
         .classed( scene.Class.Edge.SELECTED, false)
         .each((d:EdgeData , i) => {
           // Reset its marker.
@@ -461,6 +463,20 @@ export class TfGraphElement extends Polymer.Element {
   }
   public not(x) {
     return !x;
+  }
+
+  public ready() {
+    super.ready();
+ 
+    _.toPairs(TfGraphElement.listeners).forEach(pair => {
+      let listener = (e) => {
+        //console.error(e);
+        this[pair[1]](e);
+      }
+       
+      this.$.scene.addEventListener(pair[0], listener);
+
+    });
   }
 }
 

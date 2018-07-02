@@ -31,10 +31,10 @@ export class GraphScene extends Polymer.Element {
     progress: any;
 
     @property({ type: Array })
-    datasets: Array<any>=['set 1'];
+    datasets: Array<any> = ['set 1'];
 
     @property({ type: Number })
-    selectedDataset: number=0;
+    selectedDataset: number = 0;
 
     @property({ type: Object })
     selectedFile: any
@@ -51,7 +51,7 @@ export class GraphScene extends Polymer.Element {
     @property({ type: Object, notify: true, readOnly: true })
     outGraphHierarchy: hierarchy.Hierarchy = null;
 
-    @property({ type: Object, notify: true , readOnly: true })
+    @property({ type: Object, notify: true, readOnly: true })
     outGraph: GraphModule.SlimGraph;
 
     @property({ type: Object, notify: true, readOnly: true })
@@ -72,8 +72,8 @@ export class GraphScene extends Polymer.Element {
 
 
     private _selectedDatasetChanged(datasetIndex, datasets, overridingHierarchyParams) {
-      this._parseAndConstructHierarchicalGraph(
-          datasets[datasetIndex].path, undefined, overridingHierarchyParams);
+        this._parseAndConstructHierarchicalGraph(
+            datasets[datasetIndex].path, undefined, overridingHierarchyParams);
     };
 
     private loadGraphData(tracker: ProgressTracker): Promise<GraphDef> {
@@ -87,21 +87,42 @@ export class GraphScene extends Polymer.Element {
                 library: { function: [] }
             };
 
-            for (let i = 0; i < 10; i++) {
+            let prevNode:NodeDef = null;
+
+            for (let i = 0; i < 215; i++) {
+
+                let name = "group" + (i % 3) + '/string-' + (i % 5);
+                if (i % 2 == 0) {
+                    name = "group" + (i % 4)+"/X";
+                }
                 let n: NodeDef = <NodeDef>{
                     /** Name of the node */
-                    name: 'string' + Math.random(),
+                     
+                    name: name,
                     /** List of nodes that are inputs for this node. */
                     input: [],
                     output: [],
                     /** The name of the device where the computation will run. */
-                    device: 'string' + i,
+                    device: 'String' + (i % 3),
                     /** The name of the operation associated with this node. */
-                    op: 'OP',
-                    /** List of attributes that describe/modify the operation. */                                        
-                    nodeAttributes:  [{'label':'Label'}]
-                        
+                    op: 'OP-' + (i % 4),
+                    /** List of attributes that describe/modify the operation. */
+                    nodeAttributes: { 'label': 'Label-'+i }
+
                     //{ key: 'string'; value: 'any'; }[]; 
+                }
+
+
+                if (prevNode) {
+                    let linkName = prevNode.name;
+                    if (i % 2 == 0)
+                        linkName = "^" + prevNode.name;
+                    n.input.push(linkName);
+                    prevNode.output.push(n.name);
+                }
+
+                if ((i % 2) == 0) {
+                    prevNode = n;
                 }
 
                 g.node.push(n);
@@ -124,7 +145,7 @@ export class GraphScene extends Polymer.Element {
         var tracker = util.getTracker(this);
         var hierarchyParams: hierarchy.HierarchyParams = {
             verifyTemplate: true,
-            rankDirection: 'TB',
+            rankDirection: 'LR',
             // If a set of numbered op nodes has at least this number of nodes
             // then group them into a series node.
             seriesNodeMinSize: 5,
@@ -177,10 +198,10 @@ export class GraphScene extends Polymer.Element {
                     refEdges: refEdges
                 };
                 var graphTracker = util.getSubtaskTracker(tracker, 20, 'Graph');
-                return GraphModule.build(graph, buildParams, graphTracker);               
+                return GraphModule.build(graph, buildParams, graphTracker);
             })
-            .then((graph:SlimGraph) => {
-                console.log("graph="+graph);
+            .then((graph: SlimGraph) => {
+                console.log("graph=" + graph);
                 // Populate compatibile field of OpNode based on whitelist
                 // Graph.op.checkOpsForCompatibility(graph);
 
@@ -190,13 +211,13 @@ export class GraphScene extends Polymer.Element {
                 var hierarchyTracker = util.getSubtaskTracker(tracker, 50, 'Namespace hierarchy');
                 return hierarchy.build(<SlimGraph>graph, hierarchyParams, hierarchyTracker);
             })
-            .then((graphHierarchy:hierarchy.Hierarchy) => {
-                console.log("hierarchy="+graphHierarchy);
+            .then((graphHierarchy: hierarchy.Hierarchy) => {
+                console.log("hierarchy=" + graphHierarchy);
                 // Update the properties which notify the parent with the
                 // graph hierarchy and whether the data has live stats or not.
                 (this as any)._setOutGraphHierarchy(graphHierarchy);
-                console.log("outGraph="+this.outGraph);
-                console.log("outGraphHierarchy="+this.outGraphHierarchy);
+                console.log("outGraph=" + this.outGraph);
+                console.log("outGraphHierarchy=" + this.outGraphHierarchy);
 
             })
             .catch(function (e) {
@@ -210,23 +231,23 @@ export class GraphScene extends Polymer.Element {
 
     private _selectedFileChanged(e, overridingHierarchyParams) {
         if (!e) {
-          return;
+            return;
         }
         var file = e.target.files[0];
         if (!file) {
-          return;
+            return;
         }
-    
+
         // Clear out the value of the file chooser. This ensures that if the user
         // selects the same file, we'll re-read it.
         e.target.value = '';
-    
+
         this._parseAndConstructHierarchicalGraph(
             null, file, overridingHierarchyParams);
-      }
+    }
 
-      private _readAndParseMetadata(metadataIndex) {
-          this.set('outStats', null);
+    private _readAndParseMetadata(metadataIndex) {
+        this.set('outStats', null);
         // if (metadataIndex == -1 || this.datasets[this.selectedDataset] == null ||
         //     this.datasets[this.selectedDataset].runMetadata == null ||
         //     this.datasets[this.selectedDataset].runMetadata[metadataIndex] == null) {
@@ -244,6 +265,6 @@ export class GraphScene extends Polymer.Element {
         // .then(function(stats) {
         //   this._setOutStats(stats);
         // }.bind(this));
-      }
+    }
 
 }

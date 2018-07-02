@@ -75,11 +75,10 @@ import RenderNodeInfo = render.RenderNodeInfo;
    * @param sceneElement <tf-graph-scene> polymer element
    * @return selection of the created nodeGroups
    */
-  export function buildGroup(
-      sceneGroup:any, nodeData: render.RenderNodeInfo[], sceneElement:any) {
+  export function buildGroup(sceneGroup:any, nodeData: render.RenderNodeInfo[], sceneElement:any) {
         
-    const svgId = sceneElement.$.root.parentNode.id;
-
+    const _svg = d3.select(sceneElement.$.svg);
+ 
     let container =
         scene.selectOrCreateChild(sceneGroup, 'g', Class.Node.CONTAINER);
     // Select all children and join with data.
@@ -135,7 +134,7 @@ import RenderNodeInfo = render.RenderNodeInfo;
           // metanode shape which already has the same interactions.
           addInteraction(label, d, sceneElement, d.node.type === NodeType.META);
 
-          stylize(svgId, 
+          stylize(_svg, 
             nodeGroup, d, sceneElement);
           position(nodeGroup, d);
         });
@@ -205,21 +204,21 @@ function subscenePosition(nodeGroup, d: render.RenderNodeInfo) {
  * @param d Info about the node being rendered.
  * @param sceneElement <tf-graph-scene> polymer element.
  */
-function addButton(selection:any, d: render.RenderNodeInfo, sceneElement:any) {
+function addButton(selection: any, d: render.RenderNodeInfo, sceneElement: any) {
   let group =
-      scene.selectOrCreateChild(selection, 'g', Class.Node.BUTTON_CONTAINER);
+    scene.selectOrCreateChild(selection, 'g', Class.Node.BUTTON_CONTAINER);
 
 
   scene.selectOrCreateChild(group, 'circle', Class.Node.BUTTON_CIRCLE);
-  scene.selectOrCreateChild(group, 'path', Class.Node.EXPAND_BUTTON)
-      .attr('d', 'M0,-2.2 V2.2 M-2.2,0 H2.2');
-  scene.selectOrCreateChild(group, 'path', Class.Node.COLLAPSE_BUTTON)
-      .attr('d', 'M-2.2,0 H2.2');
-    (group as any).on('click', (d: any) => {
+  scene.selectOrCreateChild(group, 'path', Class.Node.EXPAND_BUTTON).attr('d', 'M0,-2.2 V2.2 M-2.2,0 H2.2');
+  scene.selectOrCreateChild(group, 'path', Class.Node.COLLAPSE_BUTTON).attr('d', 'M-2.2,0 H2.2');
+
+  group.on('click', (d: any) => {
+    console.log("click expand");
     // Stop this event's propagation so that it isn't also considered a
     // node-select.
     (<Event>d3.event).stopPropagation();
-    sceneElement.fire('node-toggle-expand', {name: d.node.name});
+    sceneElement.fire('node-toggle-expand', { name: d.node.name });
   });
   scene.positionButton(group, d);
 };
@@ -244,6 +243,7 @@ function addInteraction(selection:any, d: render.RenderNodeInfo,
   selection
       .on('dblclick',
           (d:any) => {
+            console.error('dblclick');
             sceneElement.fire('node-toggle-expand', {name: d.node.name});
           })
       .on('mouseover',
@@ -644,9 +644,9 @@ export enum ColorBy { STRUCTURE, STATE, CARDINALITY, DEVICE, XLA_CLUSTER, COMPUT
  * Returns the fill color for the node given its state and the 'color by'
  * option.
  */
-export function getFillForNode(templateIndex:Function, svgId:string, colorBy:any,
+export function getFillForNode(_svg, templateIndex:Function, colorBy:any,
     renderInfo: render.RenderNodeInfo, isExpanded: boolean): string {
-
+      
   
   let colorParams = render.MetanodeColors;
   switch (colorBy) {
@@ -682,7 +682,7 @@ export function getFillForNode(templateIndex:Function, svgId:string, colorBy:any
       }
       let id = renderInfo.node.name;
       let escapedId = util.escapeQuerySelector(id);
-      let gradientDefs = d3.select('svg#svg-defs defs #linearGradients');
+      let gradientDefs = _svg.select('defs #linearGradients');
       let linearGradient = gradientDefs.select('linearGradient#' + escapedId);
       // If the linear gradient is not there yet, create it.
       if (linearGradient.size() === 0) {
@@ -713,7 +713,7 @@ export function getFillForNode(templateIndex:Function, svgId:string, colorBy:any
  * Modify node style by toggling class and assign attributes (only for things
  * that can't be done in css).
  */
-export function stylize(svgId:string, nodeGroup, renderInfo: render.RenderNodeInfo,
+export function stylize(_svg:d3.Selection<any,any,any,any>, nodeGroup, renderInfo: render.RenderNodeInfo,
     sceneElement, nodeClass?) {
   nodeClass = nodeClass || Class.Node.SHAPE;
   let isHighlighted = sceneElement.isNodeHighlighted(renderInfo.node.name);
@@ -732,8 +732,7 @@ export function stylize(svgId:string, nodeGroup, renderInfo: render.RenderNodeIn
   // Main node always exists here and it will be reached before subscene,
   // so d3 selection is fine here.
   let node = nodeGroup.select('.' + nodeClass + ' .' + Class.Node.COLOR_TARGET);
-  let fillColor = getFillForNode(sceneElement.templateIndex,
-    svgId, 
+  let fillColor = getFillForNode(_svg, sceneElement.templateIndex,
     ColorBy[sceneElement.colorBy.toUpperCase()],
     renderInfo, isExpanded);
   node.style('fill', fillColor);
@@ -760,18 +759,18 @@ export function getStrokeForFill(fill: string) {
  *
  * @param renderGraphInfo Information on the rendered state of the graph.
  */
-export function traceInputs(renderGraphInfo: render.RenderGraphInfo) {
+export function traceInputs(_svg:any,renderGraphInfo: render.RenderGraphInfo) {
+  console.error("traceInputs"+_svg);
   if (renderGraphInfo) {
-    _resetStyles(renderGraphInfo);
-    _traceInputs(renderGraphInfo);
+    _resetStyles(_svg, renderGraphInfo);
+    _traceInputs(_svg, renderGraphInfo);
   }
 }
 
-function _resetStyles(renderGraphInfo: render.RenderGraphInfo) {
+function _resetStyles(_svg, renderGraphInfo: render.RenderGraphInfo) {
   // Reset all styling.
   if (renderGraphInfo) {
-    let _svg = d3.select("#" + renderGraphInfo.svgId);
-
+     
     _svg.selectAll('.input-highlight').classed('input-highlight', false).classed("out", false );
     _svg.selectAll('.non-input').classed('non-input', false);
     _svg.selectAll('.input-parent').classed('input-parent', false);
@@ -784,9 +783,8 @@ function _resetStyles(renderGraphInfo: render.RenderGraphInfo) {
   }
 }
 
-function _traceInputs(renderGraphInfo: render.RenderGraphInfo ) {
-
-    const _svg=d3.select("#"+renderGraphInfo.svgId);
+function _traceInputs(_svg:any, renderGraphInfo: render.RenderGraphInfo ) {
+     
   // Extract currently selected node. Return if input tracing disabled or no
   // node is selected.
   const selectedNodeSelectorString = 'g.node.selected,g.op.selected';
@@ -803,9 +801,9 @@ function _traceInputs(renderGraphInfo: render.RenderGraphInfo ) {
 
   let allTracedNodes:{[key:string]:boolean} = {};
   _.each(opNodes, function(nodeInstance) {
-        traceAllInputsOfOpNode(renderGraphInfo, nodeInstance, allTracedNodes, (a:any)=>{return a.outputs}, 'input-edge-highlight out', false);
+        traceAllInputsOfOpNode(_svg, renderGraphInfo, nodeInstance, allTracedNodes, (a:any)=>{return a.outputs}, 'input-edge-highlight out', false);
         allTracedNodes[nodeInstance.name]=false;
-        traceAllInputsOfOpNode(renderGraphInfo, nodeInstance, allTracedNodes, (a:any)=>{return a.inputs}, 'input-edge-highlight', true);
+        traceAllInputsOfOpNode(_svg, renderGraphInfo, nodeInstance, allTracedNodes, (a:any)=>{return a.inputs}, 'input-edge-highlight', true);
 
   });
 
@@ -823,7 +821,7 @@ function _traceInputs(renderGraphInfo: render.RenderGraphInfo ) {
   let highlightedNodes = Object.keys(allTracedNodes);
   let visibleNodes = 
       _findVisibleParentsFromOpNodes(renderGraphInfo, highlightedNodes);
-  _markParentsOfNodes(visibleNodes, renderGraphInfo);
+  _markParentsOfNodes(_svg, visibleNodes, renderGraphInfo);
 
   // Attach class to all non-input nodes and edges for styling.
   _svg.selectAll(
@@ -887,6 +885,7 @@ interface VisibleParent {
 }
 
 export function traceAllInputsOfOpNode(
+    _svg: any,
     renderGraphInfo:  render.RenderGraphInfo, startNode: OpNode,
     allTracedNodes: any,
     edgesQuery:Function, edgeHighlightClass:string, reverse:boolean) {
@@ -903,7 +902,7 @@ export function traceAllInputsOfOpNode(
   // Get visible parent.
   let currentVisibleParent = getVisibleParent(renderGraphInfo, startNode);
   // Mark as input node.
-  let _svg=d3.select("#"+renderGraphInfo.svgId);
+  
   _svg.select(`.node[data-name="${currentVisibleParent.name}"]`)
       .classed('input-highlight', true)
       .classed("out",!reverse);
@@ -964,11 +963,11 @@ export function traceAllInputsOfOpNode(
     // parent.
     _.each(visibleParentInfo.opNodes, function(opNode: OpNode) {
       allTracedNodes =
-          traceAllInputsOfOpNode(renderGraphInfo, opNode, allTracedNodes, edgesQuery, edgeHighlightClass, reverse);
+          traceAllInputsOfOpNode(_svg, renderGraphInfo, opNode, allTracedNodes, edgesQuery, edgeHighlightClass, reverse);
     });
 
     if (nodeInstance.name !== currentVisibleParent.name) {
-      _createVisibleTrace(
+      _createVisibleTrace(_svg,
           nodeInstance, startNodeParents, indexedStartNodeParents, edgeHighlightClass, reverse, renderGraphInfo);
     }
   });
@@ -1016,6 +1015,7 @@ export function traceAllInputsOfOpNode(
  * @private
  */
 function _createVisibleTrace(
+    _svg:any,
     nodeInstance: Node, startNodeParents: { [nodeName: string]: any }, indexedStartNodeParents: Node[], edgeHlStyle: string, reverse: boolean,
     renderGraphInfo: render.RenderGraphInfo) {
     let currentNode = nodeInstance;
@@ -1043,7 +1043,6 @@ function _createVisibleTrace(
 
     let endNodeName = previousNode.name;
 
-    let _svg = d3.select("#"+renderGraphInfo.svgId);
     if (reverse) {
         _svg.selectAll(`[data-edge="${endNodeName}--${startNodeName}"]`)
             .classed(edgeHlStyle, true);
@@ -1098,9 +1097,9 @@ function _findVisibleParentsFromOpNodes(renderGraphInfo:render.RenderGraphInfo, 
  * called.
  * @private
  */
-function _markParentsOfNodes(visibleNodes: {[nodeName: string]: Node}, renderGraphInfo: render.RenderGraphInfo) {
+function _markParentsOfNodes(_svg, visibleNodes: {[nodeName: string]: Node}, renderGraphInfo: render.RenderGraphInfo) {
     
-  const _svg=d3.select("#"+renderGraphInfo.svgId);
+  
 
   _.forOwn(visibleNodes, function(nodeInstance: Node) {
     // Mark all parents of the node as input-parents.
@@ -1108,7 +1107,7 @@ function _markParentsOfNodes(visibleNodes: {[nodeName: string]: Node}, renderGra
 
     while (currentNode.name !==  ROOT_NAME) {
       const renderedElementSelection =
-          d3.select(`.node[data-name="${currentNode.name}"]`);
+        _svg.select(`.node[data-name="${currentNode.name}"]`);
       // Only mark the element as a parent node to an input if it is not
       // marked as input node itself.
       if (renderedElementSelection.nodes().length &&

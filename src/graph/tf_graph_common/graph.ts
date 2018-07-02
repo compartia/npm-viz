@@ -1283,7 +1283,7 @@ export function createGraph<N, E>(
   let graph = new graphlib.Graph<N, E>(graphOptions);
   graph.setGraph({
     name: name,
-    rankdir: graphOptions.rankdir || 'BT',  // BT,TB,LR,RL
+    rankdir: graphOptions.rankdir || 'LR',  // BT,TB,LR,RL
     type: type
   });
   return graph;

@@ -171,15 +171,16 @@ export class GraphScene extends Polymer.Element {
      * (dataset) changes.
      */
     public _resetState() {
+        const _svg = d3.select(this.$.svg);
         // Reset the state of the component.
         this._nodeGroupIndex = {};
         this._annotationGroupIndex = {};
         this._edgeGroupIndex = {};
         this._updateLabels(false);
         // Remove all svg elements under the 'root' svg group.
-        d3.select(this.$.svg).select('#root').selectAll('*').remove();
+        _svg.select('#root').selectAll('*').remove();
         // And the defs.
-        d3.select(this.$.svg).select('defs #linearGradients')
+        _svg.select('defs #linearGradients')
             .selectAll('*').remove();
     }
 
@@ -201,7 +202,7 @@ export class GraphScene extends Polymer.Element {
     };
 
     private _updateLabels(showLabels: boolean) {
-
+        const _root=d3.select(this.$.root);
         let mainGraphTitleElement = this.$.title;
 
         let titleStyle = mainGraphTitleElement.style;
@@ -209,14 +210,14 @@ export class GraphScene extends Polymer.Element {
         let auxTitleStyle = auxTitleElement.style;
 
         let functionLibraryTitleStyle = this.$.functionLibraryTitle.style;
-        let core = <SVGGraphicsElement>d3.select("." + scene.Class.Scene.GROUP + ">." +
+        let core = <SVGGraphicsElement>_root.select("." + scene.Class.Scene.GROUP + ">." +
             scene.Class.Scene.CORE).node();
         // Only show labels if the graph is fully loaded.
         if (showLabels && core && this.progress && this.progress.value === 100) {
             let aux: any =
-                d3.select("." + scene.Class.Scene.GROUP + ">." +
+                _root.select("." + scene.Class.Scene.GROUP + ">." +
                     scene.Class.Scene.INEXTRACT).node() ||
-                d3.select("." + scene.Class.Scene.GROUP + ">." +
+                _root.select("." + scene.Class.Scene.GROUP + ">." +
                     scene.Class.Scene.OUTEXTRACT).node();
             let coreX = core.getCTM().e;
             let auxX = aux ? aux.getCTM().e : null;
@@ -296,7 +297,7 @@ export class GraphScene extends Polymer.Element {
         util.time('tf-graph-scene (build scene):', () => {
             scene.buildGroup(d3.select(this.$.root), renderHierarchy.root, this, null);
             scene.addGraphClickListener(this.$.svg, this);
-            node.traceInputs(renderHierarchy);
+            node.traceInputs(d3.select(this.$.svg), renderHierarchy);
         });
 
         // Update the minimap again when the graph is done animating.
@@ -343,7 +344,7 @@ export class GraphScene extends Polymer.Element {
                 // done to translate the graph around.
                 if (!this._zoomStartCoords) {
                     this._zoomStartCoords = this._zoomTransform;
-                    this.dispatchEvent(new Event('disable-click'));
+                    this.fire('disable-click');
                 }
                 this._zoomed = true;
                 d3.select(this.$.root).attr('transform', d3.event.transform);
@@ -372,8 +373,9 @@ export class GraphScene extends Polymer.Element {
         this.set('_isAttached', false);
     }
 
-    public fire(eventName:string, value:any ):void{
-        this.dispatchEvent(new Event(eventName, value));
+    public fire(eventName:string, value?:any ):void{
+        console.log("firing "+eventName);
+        this.dispatchEvent(new CustomEvent(eventName, {bubbles: true,  detail:value}));
     }
 
     private _renderHierarchyChanged(renderHierarchy: RenderGraphInfo) {
@@ -461,12 +463,13 @@ export class GraphScene extends Polymer.Element {
      * @param  {String} n node name
      */
     private _updateNodeState(n: string) {
+        const _svg = d3.select(this.$.svg);
 
         var _node: RenderNodeInfo = this.getNode(n);
         var nodeGroup = this.getNodeGroup(n);
 
         if (nodeGroup) {
-            node.stylize("svg", nodeGroup, _node, this);
+            node.stylize(_svg, nodeGroup, _node, this);
         }
 
         if (_node.node.type === graph.NodeType.META &&
@@ -477,16 +480,15 @@ export class GraphScene extends Polymer.Element {
             // is being used.
             var libraryFunctionNodeName = graph.FUNCTION_LIBRARY_NODE_PREFIX +
                 (_node.node as graph.Metanode).associatedFunction;
-            var functionGroup = d3.select(
-                '.' + scene.Class.Scene.GROUP + '>.' +
+            var functionGroup = _svg.select('.' + scene.Class.Scene.GROUP + '>.' +
                 scene.Class.Scene.FUNCTION_LIBRARY + ' g[data-name="' +
                 libraryFunctionNodeName + '"]');
-            node.stylize("svg", functionGroup, _node, this);
+            node.stylize(_svg, functionGroup, _node, this);
         }
 
         var annotationGroupIndex = this.getAnnotationGroupsIndex(n);
         _.each(annotationGroupIndex, (aGroup, hostName) => {
-            node.stylize("svg", aGroup, _node, this,
+            node.stylize(_svg, aGroup, _node, this,
                 scene.Class.Annotation.NODE);
         });
 
@@ -501,6 +503,9 @@ export class GraphScene extends Polymer.Element {
      * @private
      */
     public _selectedNodeChanged(selectedNode: string, oldSelectedNode: string) {
+
+        const _svg = d3.select(this.$.svg);
+
         if (selectedNode === oldSelectedNode) {
             return;
         }
@@ -509,7 +514,7 @@ export class GraphScene extends Polymer.Element {
             this._updateNodeState(oldSelectedNode);
         }
 
-        node.traceInputs(this.renderHierarchy);
+        node.traceInputs(_svg, this.renderHierarchy);
 
         if (!selectedNode) {
             return;
@@ -572,9 +577,8 @@ export class GraphScene extends Polymer.Element {
         this._updateLabels(!this._zoomed);
     };
 
-    private _fireEnableClick() {
-        this.dispatchEvent(new Event('enable-click'));
-        // this.fire('enable-click');
+    private _fireEnableClick() {        
+        this.fire('enable-click');
     };
 
 }
