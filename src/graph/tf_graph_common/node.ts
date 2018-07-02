@@ -75,11 +75,10 @@ import RenderNodeInfo = render.RenderNodeInfo;
    * @param sceneElement <tf-graph-scene> polymer element
    * @return selection of the created nodeGroups
    */
-  export function buildGroup(
-      sceneGroup:any, nodeData: render.RenderNodeInfo[], sceneElement:any) {
+  export function buildGroup(sceneGroup:any, nodeData: render.RenderNodeInfo[], sceneElement:any) {
         
-    const svgId = sceneElement.$.root.parentNode.id;
-
+    const _svg = d3.select(sceneElement.$.svg);
+ 
     let container =
         scene.selectOrCreateChild(sceneGroup, 'g', Class.Node.CONTAINER);
     // Select all children and join with data.
@@ -135,7 +134,7 @@ import RenderNodeInfo = render.RenderNodeInfo;
           // metanode shape which already has the same interactions.
           addInteraction(label, d, sceneElement, d.node.type === NodeType.META);
 
-          stylize(svgId, 
+          stylize(_svg, 
             nodeGroup, d, sceneElement);
           position(nodeGroup, d);
         });
@@ -645,7 +644,7 @@ export enum ColorBy { STRUCTURE, STATE, CARDINALITY, DEVICE, XLA_CLUSTER, COMPUT
  * Returns the fill color for the node given its state and the 'color by'
  * option.
  */
-export function getFillForNode(templateIndex:Function, svgId:string, colorBy:any,
+export function getFillForNode(_svg, templateIndex:Function, colorBy:any,
     renderInfo: render.RenderNodeInfo, isExpanded: boolean): string {
       
   
@@ -683,7 +682,7 @@ export function getFillForNode(templateIndex:Function, svgId:string, colorBy:any
       }
       let id = renderInfo.node.name;
       let escapedId = util.escapeQuerySelector(id);
-      let gradientDefs = d3.select('svg#svg-defs defs #linearGradients');
+      let gradientDefs = _svg.select('defs #linearGradients');
       let linearGradient = gradientDefs.select('linearGradient#' + escapedId);
       // If the linear gradient is not there yet, create it.
       if (linearGradient.size() === 0) {
@@ -714,7 +713,7 @@ export function getFillForNode(templateIndex:Function, svgId:string, colorBy:any
  * Modify node style by toggling class and assign attributes (only for things
  * that can't be done in css).
  */
-export function stylize(svgId:string, nodeGroup, renderInfo: render.RenderNodeInfo,
+export function stylize(_svg:d3.Selection<any,any,any,any>, nodeGroup, renderInfo: render.RenderNodeInfo,
     sceneElement, nodeClass?) {
   nodeClass = nodeClass || Class.Node.SHAPE;
   let isHighlighted = sceneElement.isNodeHighlighted(renderInfo.node.name);
@@ -733,8 +732,7 @@ export function stylize(svgId:string, nodeGroup, renderInfo: render.RenderNodeIn
   // Main node always exists here and it will be reached before subscene,
   // so d3 selection is fine here.
   let node = nodeGroup.select('.' + nodeClass + ' .' + Class.Node.COLOR_TARGET);
-  let fillColor = getFillForNode(sceneElement.templateIndex,
-    svgId, 
+  let fillColor = getFillForNode(_svg, sceneElement.templateIndex,
     ColorBy[sceneElement.colorBy.toUpperCase()],
     renderInfo, isExpanded);
   node.style('fill', fillColor);

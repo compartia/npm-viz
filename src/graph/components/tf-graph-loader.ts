@@ -87,8 +87,9 @@ export class GraphScene extends Polymer.Element {
                 library: { function: [] }
             };
 
-            let prevNode = null;
-            for (let i = 0; i < 15; i++) {
+            let prevNode:NodeDef = null;
+
+            for (let i = 0; i < 215; i++) {
 
                 let name = "group" + (i % 3) + '/string-' + (i % 5);
                 if (i % 2 == 0) {
@@ -113,13 +114,16 @@ export class GraphScene extends Polymer.Element {
 
 
                 if (prevNode) {
-                    let linkName = prevNode;
+                    let linkName = prevNode.name;
                     if (i % 2 == 0)
-                        linkName = "^" + prevNode;
+                        linkName = "^" + prevNode.name;
                     n.input.push(linkName);
+                    prevNode.output.push(n.name);
                 }
 
-                if ((i % 2) == 0) prevNode = n.name;
+                if ((i % 2) == 0) {
+                    prevNode = n;
+                }
 
                 g.node.push(n);
             }
@@ -141,7 +145,7 @@ export class GraphScene extends Polymer.Element {
         var tracker = util.getTracker(this);
         var hierarchyParams: hierarchy.HierarchyParams = {
             verifyTemplate: true,
-            rankDirection: 'TB',
+            rankDirection: 'LR',
             // If a set of numbered op nodes has at least this number of nodes
             // then group them into a series node.
             seriesNodeMinSize: 5,

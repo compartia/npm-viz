@@ -203,7 +203,6 @@ const nodeDisplayNameRegex = new RegExp(
  * for each node in the graph.
  */
 export class RenderGraphInfo {
-  svgId?:string;
   hierarchy: hierarchy.Hierarchy;
   private displayingStats: boolean;
   private index: {[nodeName: string]: RenderNodeInfo};
@@ -242,7 +241,7 @@ export class RenderGraphInfo {
     this.renderedOpNames.push(hierarchy.root.name);
     this.buildSubhierarchy(hierarchy.root.name);
     this.root.expanded = true;
-    this.traceInputs = false;
+    this.traceInputs = true;//false;
   }
 
   computeScales() {

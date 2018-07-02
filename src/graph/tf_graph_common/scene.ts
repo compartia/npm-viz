@@ -372,6 +372,8 @@ export function buildGroup(container:any,
     sceneElement:any,
     sceneClass: string): d3.Selection<any, any, any, any> {
 
+  
+
   sceneClass = sceneClass || Class.Scene.GROUP;
   let isNewSceneGroup = selectChild(container, 'g', sceneClass).empty();
   let sceneGroup = selectOrCreateChild(container, 'g', sceneClass);
@@ -403,8 +405,7 @@ export function buildGroup(container:any,
   if (renderNode.isolatedInExtract.length > 0) {
     let inExtractGroup =
         selectOrCreateChild(sceneGroup, 'g', Class.Scene.INEXTRACT);
-    node.buildGroup(inExtractGroup, renderNode.isolatedInExtract,
-        sceneElement);
+    node.buildGroup(inExtractGroup, renderNode.isolatedInExtract, sceneElement);
   } else {
     selectChild(sceneGroup, 'g', Class.Scene.INEXTRACT).remove();
   }
@@ -423,8 +424,7 @@ export function buildGroup(container:any,
   if (renderNode.libraryFunctionsExtract.length > 0) {
     let outExtractGroup =
         selectOrCreateChild(sceneGroup, 'g', Class.Scene.FUNCTION_LIBRARY);
-    node.buildGroup(outExtractGroup, renderNode.libraryFunctionsExtract,
-        sceneElement);
+    node.buildGroup(outExtractGroup, renderNode.libraryFunctionsExtract, sceneElement);
   } else {
     selectChild(sceneGroup, 'g', Class.Scene.FUNCTION_LIBRARY).remove();
   }

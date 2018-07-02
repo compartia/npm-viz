@@ -86,6 +86,7 @@ export function getEdgeKey(edgeObj: EdgeData) {
 export function buildGroup(sceneGroup : any,
     graph: graphlib.Graph<render.RenderNodeInfo, render.RenderMetaedgeInfo>,
     sceneElement : any) {
+
   let edges: EdgeData[] = [];
   edges = _.reduce(graph.edges(), (edges, edgeObj) => {
     let edgeLabel = graph.edge(edgeObj);
@@ -97,7 +98,7 @@ export function buildGroup(sceneGroup : any,
     return edges;
   }, edges);
 
-  const $svg=d3.select(sceneElement.$.svg);
+  const $svg = d3.select(sceneElement.$.svg);
 
   const _position = function(d) {
    
@@ -117,7 +118,10 @@ export function buildGroup(sceneGroup : any,
 
   // Select all children and join with data.
   // (Note that all children of g.edges are g.edge)
-  let edgeGroups = (container as any).selectAll(function() {return <any>this.childNodes;}).data(edges, getEdgeKey);
+  let edgeGroups = (container as any).selectAll(
+    function() {
+      return <any>this.childNodes;
+    }).data(edges, getEdgeKey);
 
   // Make edges a group to support rendering multiple lines for metaedge
   edgeGroups.enter()
