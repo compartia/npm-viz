@@ -97,6 +97,21 @@ export function buildGroup(sceneGroup : any,
     return edges;
   }, edges);
 
+  const $svg=d3.select(sceneElement.$.svg);
+
+  const _position = function(d) {
+   
+    let factory = function (a, b, c) {
+      return getEdgePathInterpolator($svg , a, b, c);
+    };
+  
+    d3.select(this)
+      .select('path.' + Class.Edge.LINE)
+      .transition()
+      .attrTween('d', factory as any);
+  };
+   
+
   let container =
       scene.selectOrCreateChild(sceneGroup, 'g', Class.Edge.CONTAINER);
 
@@ -135,7 +150,7 @@ export function buildGroup(sceneGroup : any,
         appendEdge(edgeGroup, d, sceneElement);
       })
       .merge(edgeGroups)
-      .each(position)
+      .each(_position)
       .each(function(d) {
     stylize(d3.select(this), d, sceneElement);
   });
@@ -372,7 +387,7 @@ export let interpolate: d3.Line<{x: number, y: number}> = d3.line<{x: number, y:
 /**
  * Returns a tween interpolator for the endpoint of an edge path.
  */
-function getEdgePathInterpolator(d: EdgeData, i: number, a: string) {
+function getEdgePathInterpolator($svg, d: EdgeData, i: number, a: string) {
   let renderMetaedgeInfo = <render.RenderMetaedgeInfo> d.label;
   let adjoiningMetaedge = renderMetaedgeInfo.adjoiningMetaedge;
   let points = renderMetaedgeInfo.points;
@@ -381,11 +396,11 @@ function getEdgePathInterpolator(d: EdgeData, i: number, a: string) {
   // of the path.
   if (d.label.startMarkerId) {
     points = adjustPathPointsForMarker(
-        points!, d3.select('#' + d.label.startMarkerId), true);
+        points!, $svg.select('#' + d.label.startMarkerId), true);
   }
   if (d.label.endMarkerId) {
     points = adjustPathPointsForMarker(
-        points!, d3.select('#' + d.label.endMarkerId), false);
+        points!, $svg.select('#' + d.label.endMarkerId), false);
   }
 
   if (!adjoiningMetaedge) {
@@ -420,11 +435,23 @@ function getEdgePathInterpolator(d: EdgeData, i: number, a: string) {
   };
 }
 
+// function position(d) {
+//   d3.select(this)
+//       .select('path.' + Class.Edge.LINE)
+//       .transition()
+//       .attrTween('d', getEdgePathInterpolator as any);
+// };
+
 function position(d) {
+   
+  let factory = function (a, b, c) {
+    return getEdgePathInterpolator(this , a, b, c);
+  };
+
   d3.select(this)
-      .select('path.' + Class.Edge.LINE)
-      .transition()
-      .attrTween('d', getEdgePathInterpolator as any);
+    .select('path.' + Class.Edge.LINE)
+    .transition()
+    .attrTween('d', factory as any);
 };
 
 /**
