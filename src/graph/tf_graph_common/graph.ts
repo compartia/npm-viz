@@ -154,7 +154,7 @@ export interface OpNode extends Node {
   op: string;
   // The device on which the op ran. Null if it is unknown.
   device: string;
-  attr: {key: string, value: any}[];
+  // attr: {key: string, value: any}[];
   inputs: NormalizedInput[];
   inEmbeddings: OpNode[];
   outEmbeddings: OpNode[];
@@ -387,7 +387,7 @@ export class OpNodeImpl implements OpNode {
   op: string;
   device: string;
   stats: NodeStats;
-  attr: {key: string, value: any}[];
+   
   inputs: NormalizedInput[];
   type: NodeType;
   isGroupNode: boolean;
@@ -409,7 +409,7 @@ export class OpNodeImpl implements OpNode {
   // This field is only defined if the op node represents an output_arg of a
   // library function. It is the index of the output_arg.
   functionOutputIndex: number;
-
+ 
   /**
    * Constructs a new Op node.
    *
@@ -419,14 +419,14 @@ export class OpNodeImpl implements OpNode {
     this.op = rawNode.op;
     this.name = rawNode.name;
     this.device = rawNode.device;
-    this.attr = rawNode.attr;
+    this.nodeAttributes = rawNode.nodeAttributes;
     // An array of normalized inputs that denote the incoming edges to
     // the current node. Each input contains the normalized name of the
     // source node, whether it has a number part and whether it is a
     // control dependency.
     this.inputs = normalizeInputs(rawNode.input);
-    this.outputShapes = extractOutputShapes(rawNode.attr);
-    this.xlaCluster = extractXlaCluster(rawNode.attr);
+    this.outputShapes = extractOutputShapes(rawNode.nodeAttributes);
+    this.xlaCluster = extractXlaCluster(rawNode.nodeAttributes);
     this.compatible = false;
     // additional properties
     this.type = NodeType.OP;
@@ -892,46 +892,46 @@ class SeriesNodeImpl implements SeriesNode {
  * node proto.
  */
 // tslint:disable-next-line:no-any
-function extractOutputShapes(attr: Array<{key: string, value: any}>):
+function extractOutputShapes(attr: {[key: string]: any}):
     {[key: string]: TensorShape;} | null {
   let result = null;
   // We don't know anything about the output tensors.
   if (!attr) {
     return null;
   }
-  for (let i = 0; i < attr.length; i++) {
-    let {key, value} = attr[i];
-    if (key === OUTPUT_SHAPES_KEY) {
-      if (!value.list.shape) {
-        // The OUTPUT_SHAPES_KEY lacks a value. We know nothing about the shape.
-        return null;
-      }
+  // for (let i = 0; i < attr.length; i++) {
+  //   let {key, value} = attr[i];
+  //   if (key === OUTPUT_SHAPES_KEY) {
+  //     if (!value.list.shape) {
+  //       // The OUTPUT_SHAPES_KEY lacks a value. We know nothing about the shape.
+  //       return null;
+  //     }
 
-      // Map all output tensors into array of numbers denoting their shape.
-      let result = value.list.shape.map((shape:any) => {
-        if (shape.unknown_rank) {
-          // This output tensor is of unknown rank. We don't know if it is a
-          // scalar, or a tensor, or of what shape it is.
-          return null;
-        }
-        if (shape.dim == null ||
-            (shape.dim.length === 1 && shape.dim[0].size == null)) {
-          // This output tensor is a scalar.
-          return [];
-        }
-        // This output tensor has a known rank. Map each dimension size
-        // into a number.
-        return shape.dim.map((dim:any) => {
-          // Size can be -1 if this particular dimension is unknown.
-          return dim.size;
-        });
-      });
-      // Since we already processed it, remove the entry from the attribute
-      // list (saves memory).
-      attr.splice(i, 1);
-      return result;
-    }
-  }
+  //     // Map all output tensors into array of numbers denoting their shape.
+  //     let result = value.list.shape.map((shape:any) => {
+  //       if (shape.unknown_rank) {
+  //         // This output tensor is of unknown rank. We don't know if it is a
+  //         // scalar, or a tensor, or of what shape it is.
+  //         return null;
+  //       }
+  //       if (shape.dim == null ||
+  //           (shape.dim.length === 1 && shape.dim[0].size == null)) {
+  //         // This output tensor is a scalar.
+  //         return [];
+  //       }
+  //       // This output tensor has a known rank. Map each dimension size
+  //       // into a number.
+  //       return shape.dim.map((dim:any) => {
+  //         // Size can be -1 if this particular dimension is unknown.
+  //         return dim.size;
+  //       });
+  //     });
+  //     // Since we already processed it, remove the entry from the attribute
+  //     // list (saves memory).
+  //     attr.splice(i, 1);
+  //     return result;
+  //   }
+  // }
   // We didn't find OUTPUT_SHAPES_KEY in attributes, so we don't know anything
   // about the output tensors.
   return null;
@@ -944,18 +944,17 @@ function extractOutputShapes(attr: Array<{key: string, value: any}>):
  *     determined.
  */
 // tslint:disable-next-line:no-any
-function extractXlaCluster(attr: Array<{key: string, value: any}>): string|
-    null {
+function extractXlaCluster(attr: {[key: string]: any;}): string | null {
   if (!attr) {
     return null;
   }
 
-  // Find the attribute for XLA cluster if there is one.
-  for (let i = 0; i < attr.length; i++) {
-    if (attr[i].key === _XLA_CLUSTER_KEY) {
-      return attr[i].value['s'] || null;
-    }
-  }
+  // // Find the attribute for XLA cluster if there is one.
+  // for (let i = 0; i < attr.length; i++) {
+  //   if (attr[i].key === _XLA_CLUSTER_KEY) {
+  //     return attr[i].value['s'] || null;
+  //   }
+  // }
   return null;
 }
 

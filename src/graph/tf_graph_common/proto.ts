@@ -19,7 +19,7 @@ limitations under the License.
     state: string;//represents node color
   }
 
- 
+   
   /**
    * TensorFlow node definition as defined in the graph.proto file.
    */
@@ -34,7 +34,9 @@ limitations under the License.
     /** The name of the operation associated with this node. */
     op: string;
     /** List of attributes that describe/modify the operation. */
-    attr:{ key: string; value: any; }[]; 
+    // attr:{ key: string; value: any; }[]; 
+
+    nodeAttributes: {[key: string]: any;};
   }
 
 

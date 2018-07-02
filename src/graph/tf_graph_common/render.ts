@@ -479,9 +479,9 @@ export class RenderGraphInfo {
       input: [],
       device: node.device,
       op: node.op,
-      attr: _.cloneDeep(node.attr),
+      nodeAttributes: _.cloneDeep(node.nodeAttributes),
     });
-
+ 
     // Update various properties.
     newOpNode.cardinality = node.cardinality;
     newOpNode.include = node.include;

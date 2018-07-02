@@ -4,7 +4,8 @@ import "polymer/polymer.html";
 import { customElement, property } from 'taktik-polymer-typescript';
 
 import { ProgressTracker } from '../tf_graph_common/common';
-import * as Graph from '../tf_graph_common/graph';
+import * as GraphModule from '../tf_graph_common/graph';
+import { SlimGraph } from '../tf_graph_common/graph';
 import * as hierarchy from '../tf_graph_common/hierarchy';
 import { GraphDef, NodeDef } from '../tf_graph_common/proto';
 import * as util from '../tf_graph_common/util';
@@ -48,10 +49,10 @@ export class GraphScene extends Polymer.Element {
     overridingHierarchyParams: any = {};
 
     @property({ type: Object, notify: true, readOnly: true })
-    outGraphHierarchy: any;
+    outGraphHierarchy: hierarchy.Hierarchy = null;
 
-    @property({ type: Object, notify: true, readOnly: true })
-    outGraph: Graph.SlimGraph;
+    @property({ type: Object, notify: true , readOnly: true })
+    outGraph: GraphModule.SlimGraph;
 
     @property({ type: Object, notify: true, readOnly: true })
     outHierarchyParams: any;
@@ -89,7 +90,7 @@ export class GraphScene extends Polymer.Element {
             for (let i = 0; i < 10; i++) {
                 let n: NodeDef = <NodeDef>{
                     /** Name of the node */
-                    name: 'string' + i,
+                    name: 'string' + Math.random(),
                     /** List of nodes that are inputs for this node. */
                     input: [],
                     output: [],
@@ -97,8 +98,10 @@ export class GraphScene extends Polymer.Element {
                     device: 'string' + i,
                     /** The name of the operation associated with this node. */
                     op: 'OP',
-                    /** List of attributes that describe/modify the operation. */
-                    attr: {}//{ key: 'string'; value: 'any'; }[]; 
+                    /** List of attributes that describe/modify the operation. */                                        
+                    nodeAttributes:  [{'label':'Label'}]
+                        
+                    //{ key: 'string'; value: 'any'; }[]; 
                 }
 
                 g.node.push(n);
@@ -174,29 +177,73 @@ export class GraphScene extends Polymer.Element {
                     refEdges: refEdges
                 };
                 var graphTracker = util.getSubtaskTracker(tracker, 20, 'Graph');
-                return Graph.build(graph, buildParams, graphTracker);
+                return GraphModule.build(graph, buildParams, graphTracker);               
             })
-            .then(graph => {
+            .then((graph:SlimGraph) => {
+                console.log("graph="+graph);
                 // Populate compatibile field of OpNode based on whitelist
                 // Graph.op.checkOpsForCompatibility(graph);
 
+                // this.set('outGraph', graph);
+                (this as any)._setOutGraph(graph);
 
-                this.set('outGraph', graph);
-
-                var hierarchyTracker = util.getSubtaskTracker(tracker, 50,
-                    'Namespace hierarchy');
-                return hierarchy.build(<Graph.SlimGraph>graph, hierarchyParams, hierarchyTracker);
+                var hierarchyTracker = util.getSubtaskTracker(tracker, 50, 'Namespace hierarchy');
+                return hierarchy.build(<SlimGraph>graph, hierarchyParams, hierarchyTracker);
             })
-            .then((graphHierarchy) => {
+            .then((graphHierarchy:hierarchy.Hierarchy) => {
+                console.log("hierarchy="+graphHierarchy);
                 // Update the properties which notify the parent with the
                 // graph hierarchy and whether the data has live stats or not.
-                this.set('outGraphHierarchy', graphHierarchy);
+                (this as any)._setOutGraphHierarchy(graphHierarchy);
+                console.log("outGraph="+this.outGraph);
+                console.log("outGraphHierarchy="+this.outGraphHierarchy);
+
             })
             .catch(function (e) {
+                console.error(e);
                 // Generic error catch, for errors that happened outside
                 // asynchronous tasks.
                 tracker.reportError("Graph visualization failed: " + e, e);
             });
-    }
+    };
+
+
+    private _selectedFileChanged(e, overridingHierarchyParams) {
+        if (!e) {
+          return;
+        }
+        var file = e.target.files[0];
+        if (!file) {
+          return;
+        }
+    
+        // Clear out the value of the file chooser. This ensures that if the user
+        // selects the same file, we'll re-read it.
+        e.target.value = '';
+    
+        this._parseAndConstructHierarchicalGraph(
+            null, file, overridingHierarchyParams);
+      }
+
+      private _readAndParseMetadata(metadataIndex) {
+          this.set('outStats', null);
+        // if (metadataIndex == -1 || this.datasets[this.selectedDataset] == null ||
+        //     this.datasets[this.selectedDataset].runMetadata == null ||
+        //     this.datasets[this.selectedDataset].runMetadata[metadataIndex] == null) {
+        //   this._setOutStats(null);
+        //   return;
+        // }
+        // var path = this.datasets[this.selectedDataset].runMetadata[metadataIndex].path;
+        // // Reset the progress bar to 0.
+        // this.set('progress', {
+        //   value: 0,
+        //   msg: ''
+        // });
+        // var tracker = tf.graph.util.getTracker(this);
+        // tf.graph.parser.fetchAndParseMetadata(path, tracker)
+        // .then(function(stats) {
+        //   this._setOutStats(stats);
+        // }.bind(this));
+      }
 
 }

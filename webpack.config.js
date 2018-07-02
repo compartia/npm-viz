@@ -31,6 +31,7 @@ module.exports = {
     // These rules tell Webpack how to process different module types.cd ..
     // Remember, *everything* is a module in Webpack. That includes
     // CSS, and (thanks to our loader) HTML.
+
     mode:"development",
     module: {
         rules: [

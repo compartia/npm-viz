@@ -372,6 +372,10 @@ export class GraphScene extends Polymer.Element {
         this.set('_isAttached', false);
     }
 
+    public fire(eventName:string, value:any ):void{
+        this.dispatchEvent(new Event(eventName, value));
+    }
+
     private _renderHierarchyChanged(renderHierarchy: RenderGraphInfo) {
         this._hasRenderHierarchyBeenFitOnce = false;
         this._resetState();

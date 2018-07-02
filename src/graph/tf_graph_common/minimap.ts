@@ -78,7 +78,7 @@ export class Minimap {
     let $minimap = d3.select(minimap);
     // The minimap will have 2 main components: the canvas showing the content
     // and an svg showing a rectangle of the currently zoomed/panned viewpoint.
-    let $minimapSvg = $minimap.select('svg');
+    let $minimapSvg = $minimap.select('#minimapSvg');
 
     // Make the viewpoint rectangle draggable.
     let $viewpoint = $minimapSvg.select('rect');

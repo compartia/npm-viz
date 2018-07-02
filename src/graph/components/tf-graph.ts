@@ -126,7 +126,7 @@ export class TfGraphElement extends Polymer.Element {
    * @type {Function}
    */
   @property({ type: Object })
-  edgeLabelFunction = '';
+  edgeLabelFunction:any = null;
 
   /**
    * An optional callback that implements the
@@ -167,7 +167,9 @@ export class TfGraphElement extends Polymer.Element {
   };
 
   private _buildNewRenderHierarchy(graphHierarchy:Hierarchy) {
-    this._buildRenderHierarchy(graphHierarchy);
+    if(graphHierarchy){
+      this._buildRenderHierarchy(graphHierarchy);
+    }    
   };
 
   private _statsChanged(stats, devicesForStats) {
@@ -181,8 +183,8 @@ export class TfGraphElement extends Polymer.Element {
     }
   };
 
-  private _buildRenderHierarchy(graphHierarchy) {
-    util.time('new tf.graph.render.Hierarchy', function() {
+  private _buildRenderHierarchy(graphHierarchy:Hierarchy) {
+    util.time('new tf.graph.render.Hierarchy',  () => {
       if (graphHierarchy.root.type !==  graph.NodeType.META) {
         // root must be metanode but sometimes Polymer's dom-if has not
         // remove tf-graph element yet in <tf-node-info>
@@ -207,7 +209,7 @@ export class TfGraphElement extends Polymer.Element {
         };
       }
 
-      this._setColorByParams({
+      (this as any)._setColorByParams({
         compute_time: getColorParamsFromScale(renderGraph.computeTimeScale),
         memory: getColorParamsFromScale(renderGraph.memoryUsageScale),
         device: _.map(renderGraph.deviceColorMap.domain(),
@@ -225,11 +227,16 @@ export class TfGraphElement extends Polymer.Element {
           };
         }),
       });
-      this._setRenderHierarchy(renderGraph);
-      this.async(function() {
-        this.fire("rendered");
-      });
-    }.bind(this));
+      (this as any)._setRenderHierarchy(renderGraph);
+
+      setTimeout(() => {
+        this.dispatchEvent(new Event("rendered"));
+      }, 50);
+
+      // this.async(function() {
+      //   this.fire("rendered");
+      // });
+    });
   };
 
   private _getVisible(name:string):string {

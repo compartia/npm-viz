@@ -798,19 +798,19 @@ export function addHealthPill(
       // Determine if we should display the output range as integers.
 
       let node = nodeInfo.node as OpNode;
-      let attributes = node.attr;
-      if (attributes && attributes.length) {
-        // Find the attribute for output type if there is one.
-        for (let i = 0; i < attributes.length; i++) {
-          if (attributes[i].key === 'T') {
-            // Note whether the output type is an integer.
-            let outputType = attributes[i].value['type'];
-            shouldRoundOnesDigit =
-                outputType && /^DT_(BOOL|INT|UINT)/.test(outputType);
-            break;
-          }
-        }
-      }
+      // let attributes = node.attr;
+      // if (attributes && attributes.length) {
+      //   // Find the attribute for output type if there is one.
+      //   for (let i = 0; i < attributes.length; i++) {
+      //     if (attributes[i].key === 'T') {
+      //       // Note whether the output type is an integer.
+      //       let outputType = attributes[i].value['type'];
+      //       shouldRoundOnesDigit =
+      //           outputType && /^DT_(BOOL|INT|UINT)/.test(outputType);
+      //       break;
+      //     }
+      //   }
+      // }
     }
   }
 
