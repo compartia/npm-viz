@@ -15,6 +15,8 @@ limitations under the License.
 /**
  * Package for the Graph Hierarchy for TensorFlow graph.
  */
+import * as graphlib from 'graphlib'; 
+
 import * as _ from "lodash";
 import * as d3 from 'd3';
 import * as graph from './graph';

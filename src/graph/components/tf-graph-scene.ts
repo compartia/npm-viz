@@ -261,18 +261,16 @@ export class GraphScene extends Polymer.Element {
     }
 
 
-
-
-
-    public observers = [
-        '_colorByChanged(colorBy)',
-        '_renderHierarchyChanged(renderHierarchy)',
-        // Animation and fitting must come after the observer for the hierarchy changing because we must
-        // first build the render hierarchy.
-        '_animateAndFit(_isAttached, renderHierarchy)',
-        '_updateHealthPills(nodeNamesToHealthPills, healthPillStepIndex)',
-    ];
-
+    static get observers(){
+        return [
+            '_colorByChanged(colorBy)',
+            '_renderHierarchyChanged(renderHierarchy)',
+            // Animation and fitting must come after the observer for the hierarchy changing because we must
+            // first build the render hierarchy.
+            '_animateAndFit(_isAttached, renderHierarchy)',
+            '_updateHealthPills(nodeNamesToHealthPills, healthPillStepIndex)',
+        ];
+    }
 
     /**
      * Pans to a node. Assumes that the node exists.

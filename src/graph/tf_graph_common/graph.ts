@@ -1,3 +1,5 @@
+/// <reference path="externs.d.ts"/>
+
 
 /* Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
@@ -13,12 +15,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
- import * as _ from 'lodash';
- import * as proto from './proto';
-  
- import { runAsyncTask } from "./util";
+ 
+ 
+import * as graphlib from 'graphlib';
+ 
+import * as _ from 'lodash';
+import * as proto from './proto';
+ 
+import { runAsyncTask } from "./util";
 import { Hierarchy } from './hierarchy';
 import { ProgressTracker } from './common';
+
+// const graphlib = require('graphlib');
 
 
 /** Delimiter used in node names to denote namespaces. */
@@ -59,7 +67,7 @@ const _XLA_CLUSTER_KEY = '_XlaCluster';
  * which belong to Metanodes, should not use BaseEdge objects, but instead
  * contain Metaedges (which in turn may contain any number of BaseEdges).
  */
-export interface BaseEdge extends graphlib.EdgeObject {
+export interface BaseEdge extends AbstractBaseEdge {
   isControlDependency: boolean;
   isReferenceEdge: boolean;
   /** The index of the output tensor of the source node. */
@@ -679,8 +687,15 @@ export class MetanodeImpl implements Metanode {
   }
 };
 
-export interface Metaedge extends graphlib.EdgeObject {
-
+export interface AbstractBaseEdge extends graphlib.EdgeObject{
+  v: string;
+  w: string;
+  name?: string;
+}
+export interface Metaedge extends AbstractBaseEdge {
+  v: string;
+  w: string;
+  name?: string;
   /**
    * Stores the original BaseEdges represented by this Metaedge.
    */

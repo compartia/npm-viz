@@ -1,3 +1,4 @@
+/// <reference path="externs.d.ts"/>
 /* Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the 'License');
@@ -15,7 +16,7 @@ limitations under the License.
 /**
  * Package for the Render Hierarchy for TensorFlow graph.
  */
-
+import * as graphlib from 'graphlib';
 import * as d3 from 'd3';
 import * as _ from 'lodash';
 import { EdgeData } from './annotation';
@@ -206,11 +207,11 @@ export class RenderGraphInfo {
   hierarchy: hierarchy.Hierarchy;
   private displayingStats: boolean;
   private index: {[nodeName: string]: RenderNodeInfo};
-  private renderedOpNames: string[];
-  private deviceColorMap?: d3.ScaleOrdinal<string, string>;
-  private xlaClusterColorMap?: d3.ScaleOrdinal<string, string>;
-  private memoryUsageScale?: d3.ScaleLinear<string, string>;
-  private computeTimeScale?: d3.ScaleLinear<string, string>;
+  renderedOpNames: string[];
+  deviceColorMap?: d3.ScaleOrdinal<string, string>;
+  xlaClusterColorMap?: d3.ScaleOrdinal<string, string>;
+  memoryUsageScale?: d3.ScaleLinear<string, string>;
+  computeTimeScale?: d3.ScaleLinear<string, string>;
   /** Scale for the thickness of edges when there is no shape information. */
   edgeWidthSizedBasedScale?:
       d3.ScaleLinear<number, number> | d3.ScalePower<number, number>;
@@ -259,7 +260,7 @@ export class RenderGraphInfo {
 
     let topLevelGraph = this.hierarchy.root.metagraph;
     // Find the maximum memory usage. Use 0 as the minimum.
-    let maxMemory = d3.max(topLevelGraph.nodes(),
+    let maxMemory:any = d3.max(topLevelGraph.nodes(),
         (nodeName, index) => {
       let node = topLevelGraph.node(nodeName);
       // Some ops don't have stats at all.
@@ -272,7 +273,7 @@ export class RenderGraphInfo {
         .range(PARAMS.minMaxColors);
 
     // Find the maximum compute time. Use 0 as the minimum.
-    let maxComputeTime = d3.max(topLevelGraph.nodes(),
+    let maxComputeTime:any = d3.max(topLevelGraph.nodes(),
         (nodeName, index) => {
       let node = topLevelGraph.node(nodeName);
       // Some ops don't have stats at all.
@@ -1301,8 +1302,8 @@ export class RenderGraphInfo {
    * already be built. Otherwise, bridge edges will be missing from the graph.
    */
   private buildSubhierarchiesForNeededFunctions(
-      metagraph: graphlib.Graph<GroupNode|OpNode, Metaedge>) {
-    _.each(metagraph.edges(), edgeObj => {
+    metagraph: graphlib.Graph<GroupNode|OpNode, Metaedge>) {
+      _.each(metagraph.edges(), edgeObj => {
       let metaedge = metagraph.edge(edgeObj);
       let renderMetaedgeInfo = new RenderMetaedgeInfo(metaedge);
       _.forEach(renderMetaedgeInfo.metaedge.baseEdgeList,
@@ -1770,7 +1771,7 @@ function addOutAnnotation(node: RenderNodeInfo, successor: Node,
 }
 
 function setGraphDepth(graph: graphlib.Graph<RenderNodeInfo, any>,
-    depth: number) {
+  depth: number) {
   _.each(graph.nodes(), nodeName => {
     let child = graph.node(nodeName);
     child.expanded = depth > 1; // set all child of depth 1 to collapsed
@@ -1840,8 +1841,8 @@ function setGroupNodeDepth(renderInfo: RenderGroupNodeInfo,
  * @param w Sink name.
  */
 function createShortcut(
-    graph: graphlib.Graph<RenderNodeInfo, RenderMetaedgeInfo>,
-    v: string, w: string) {
+  graph: graphlib.Graph<RenderNodeInfo, RenderMetaedgeInfo>,
+  v: string, w: string) {
   let src = graph.node(v);
   let sink = graph.node(w);
   let edge = graph.edge(v, w);
