@@ -19,9 +19,36 @@ export interface PackageLock {
     dependencies: { [key: string]: PackageLockDependency; };
 }
 
-export interface NodeDefExt extends NodeDef{
+export class NodeDefExt implements NodeDef {
+    name: string;
+    /** List of nodes that are inputs for this node. */
+    private _input: NodeDefExt[] = [];
+    private _output: NodeDefExt[] = [];
+    /** The name of the device where the computation will run. */
+    device: string;
+    /** The name of the operation associated with this node. */
+    op: string;
+    /** List of attributes that describe/modify the operation. */
+    // attr:{ key: string; value: any; }[]; 
+
+    nodeAttributes: { [key: string]: any; };
+
+
     version: string;
     package: string;
+    dev: boolean;
+
+    get output(): string[] {
+        return this._output.map(x => x.name)
+    }
+    get input(): string[] {
+        return this._input.map(x => x.name)
+    }
+
+    public link(other: NodeDefExt) {
+        this._input.push(other);
+        other._output.push(this);
+    }
 }
 
 ///////////////////////
@@ -44,7 +71,7 @@ export class PackageLockGraph implements GraphDef {
 
     private nodeByKey: { [key: string]: NodeDefExt; } = {};
 
-    private iterateDeps(parent: NodeDef, deps: { [key: string]: PackageLockDependency; }, depth: number) {
+    private iterateDeps(parent: NodeDefExt, deps: { [key: string]: PackageLockDependency; }, depth: number) {
         Object.keys(deps).forEach(key => {
             let dep = deps[key];
             let nn = this.getOrCreateNode(key, dep, depth);
@@ -70,7 +97,7 @@ export class PackageLockGraph implements GraphDef {
                         console.error("cannot find node for name " + linkedName);
                         console.error("available nodes  " + Object.keys(this.nodeByKey));
                     } else {
-                        linkedNode.input.push(x.name);
+                        linkedNode.link(x);
                     }
 
 
@@ -79,10 +106,9 @@ export class PackageLockGraph implements GraphDef {
         });
     }
 
-    private linkNodes(from: NodeDef, to: NodeDef) {
-        if (from == null || to == null) return;
-        from.input.push(to.name);
-        to.output.push(from.name);
+    private linkNodes(from: NodeDefExt, to: NodeDefExt) {
+        if (from && to)
+            from.link(to);
     }
 
 
@@ -98,22 +124,32 @@ export class PackageLockGraph implements GraphDef {
             return this.nodeByKey[nodeName];
         } else {
 
-            let n: NodeDefExt = <NodeDefExt>{
-                /** Name of the node */
-                name: nodeName,
-                /** List of nodes that are inputs for this node. */
-                input: [],
-                output: [],
-                /** The name of the device where the computation will run. */
-                device: kind + "-" + depth,
-                /** The name of the operation associated with this node. */
-                op: "OP",//dep.version,
-                /** List of attributes that describe/modify the operation. */
-                nodeAttributes: { 'label': key + " " + dep.version },
+            let n: NodeDefExt = new NodeDefExt();
+            n.name = nodeName;
+            n.device = kind + "-" + depth;
+            n.dev = dep.dev;
+            n.version = dep.version;
+            n.package = key;
+            n.nodeAttributes = { 'label': key + " " + dep.version };
+            n.op = "OP";
 
-                version:dep.version,
-                package:key
-            };
+            // let __n: NodeDefExt = <NodeDefExt>{
+            //     /** Name of the node */
+            //     name: nodeName,
+            //     /** List of nodes that are inputs for this node. */
+            //     input: [],
+            //     output: [],
+            //     /** The name of the device where the computation will run. */
+            //     device: kind + "-" + depth,
+            //     /** The name of the operation associated with this node. */
+            //     op: "OP",//dep.version,
+            //     /** List of attributes that describe/modify the operation. */
+            //     nodeAttributes: { 'label': key + " " + dep.version },
+
+            //     version: dep.version,
+            //     package: key,
+            //     dev: dep.dev
+            // };
 
             (n as any).requires = dep.requires;
 
@@ -123,70 +159,28 @@ export class PackageLockGraph implements GraphDef {
         }
     }
 
-    private splitModuleName(key: string): string {
-        return key;
-        //return key.length > 20 ? key.split("-").join("/") : key;
-    }
 
-    private getPrefixIfSplittable(n: string): string {
 
-        for (let i = 0; i < PackageLockGraph.DELIMITERS.length; i++) {
-            let splitter = PackageLockGraph.DELIMITERS.charAt(i);
-            let idx = n.indexOf(splitter);
-            if (idx > 0) {
-                return n.substring(0, idx);
-            }
-        }
 
-        return null;
-    }
 
     static DELIMITERS = '-_.';
 
-    private findNodesByPrefix(prefix: string): NodeDef[] {
-        return this.node.filter((x: NodeDef) => {
 
-            for (let i = 0; i < PackageLockGraph.DELIMITERS.length; i++) {
-                let splitter = PackageLockGraph.DELIMITERS.charAt(i);
-                let chunks = x.name.split(splitter);
-                if (chunks.includes(prefix)) {
-                    return true;
-                }
-            }
-            return false;
-        });
-    }
 
-    private schedueForRenaming(prefix: string, prefixed: NodeDef[], renamingMap: { [key: string]: string; }) {
-        let names = prefixed.map(x => x.name);
 
-        names.forEach(name => {
-            let newName = prefix + "/" + name;
-            renamingMap[name] = newName
-        });
-    }
 
     private applyRenamingMap(renamingMap: { [key: string]: string; }) {
         let newName;
+        this.nodeByKey = {};
         this.node.forEach(x => {
             newName = renamingMap[x.name];
             if (newName) {
-                // console.log(x.name + "=>" + renamingMap[x.name])
                 x.name = renamingMap[x.name];
             }
-
-            x.input = this.renameLinks(x.input, renamingMap);
-            x.output = this.renameLinks(x.output, renamingMap);
+            this.nodeByKey[x.name] = x;
         });
-    }
 
-    private renameLinks(links: string[], renamingMap: { [key: string]: string; }): string[] {
-        return links.map(
-            x => {
-                let newName = renamingMap[x];
-                return newName ? newName : x;
-            }
-        );
+
     }
 
     private buildSemanticStats(): { [key: string]: number } {
@@ -205,16 +199,20 @@ export class PackageLockGraph implements GraphDef {
         return stats;
     }
 
-    private findBestGroup(groups: { [key: string]: number }, childGroup: string, delim: string): string|null {
+    private findBestGroup(groups: { [key: string]: number }, childGroup: string, delim: string): string | null {
         let splits = chunks.allSplits(childGroup, delim);
-
-        let count = splits.map(x => [x, groups[x]]);
-        // let max = _.maxBy(count, x => (x.length / <number>x[1] ));
-        let max = _.maxBy(count, x => ( x.length));
-        if(max)
-            return <string>max[0];
-        else
-            return null;
+        let best = null;
+        let max = 0;
+        for (const ch of splits) {
+            if (groups[ch]) {
+                let val = ch.length * groups[ch];
+                if (val > max) {
+                    max = val;
+                    best = ch;
+                }
+            }
+        }
+        return best;
     }
 
     private renameNodes(): void {
@@ -231,20 +229,8 @@ export class PackageLockGraph implements GraphDef {
             }
             originalGroups.push(childGroup);
             let newName = this.escape(originalGroups.join("/"));
-            renamingMap[x.name]=newName+"-"+x.version;
+            renamingMap[x.name] = newName + "-" + x.version;
         });
-
-        // this.node.forEach(x => {
-        //     let prefix = this.getPrefixIfSplittable(x.name);
-
-        //     if (prefix) {
-        //         let prefixed: NodeDef[] = this.findNodesByPrefix(prefix);
-        //         if (prefixed.length > 1) {
-        //             this.schedueForRenaming(prefix, prefixed, renamingMap);
-        //         }
-        //     }
-
-        // });
 
         this.applyRenamingMap(renamingMap);
     }
