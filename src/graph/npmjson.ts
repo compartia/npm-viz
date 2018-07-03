@@ -33,7 +33,8 @@ export class PackageLockGraph implements GraphDef {
 
     constructor(json: PackageLock) {
         this.iterateDeps(null, json.dependencies, 1);
-        this.iterateRequiremens();
+        this.linkRequiremens();
+
         this.renameNodes();
     }
 
@@ -52,7 +53,7 @@ export class PackageLockGraph implements GraphDef {
         });
     }
 
-    private iterateRequiremens() {
+    private linkRequiremens() {
         this.node.forEach((x) => {
 
             let req = (x as any).requires;
@@ -121,26 +122,32 @@ export class PackageLockGraph implements GraphDef {
     }
 
     private getPrefixIfSplittable(n: string): string {
-        let idx = n.indexOf('-');
-        if (idx > 0) {
-            return n.substring(0, idx);
-        }
 
-        idx = n.indexOf('_');
-        if (idx > 0) {
-            return n.substring(0, idx);
-        }
-
-        idx = n.indexOf('.');
-        if (idx > 0) {
-            return n.substring(0, idx);
+        for (let i = 0; i < PackageLockGraph.DELIMITERS.length; i++) {
+            let splitter = PackageLockGraph.DELIMITERS.charAt(i);
+            let idx = n.indexOf(splitter);
+            if (idx > 0) {
+                return n.substring(0, idx);
+            }
         }
 
         return null;
     }
 
+    static DELIMITERS = '-_.';
+
     private findNodesByPrefix(prefix: string): NodeDef[] {
-        return this.node.filter(x => x.name.startsWith(prefix));
+        return this.node.filter((x: NodeDef) => {
+
+            for (let i = 0; i < PackageLockGraph.DELIMITERS.length; i++) {
+                let splitter = PackageLockGraph.DELIMITERS.charAt(i);
+                let chunks = x.name.split(splitter);
+                if (chunks.includes(prefix)) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 
     private schedueForRenaming(prefix: string, prefixed: NodeDef[], renamingMap: { [key: string]: string; }) {

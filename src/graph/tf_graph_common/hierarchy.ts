@@ -481,12 +481,12 @@ export function build(graph:  SlimGraph, params: HierarchyParams,
           addEdges(h, graph, seriesNames);
         }, tracker);
       })
-      .then(() => {
-        return util.runAsyncTask(
-            'Finding similar subgraphs', 30, () => {
-              h.templates = template.detect(h, params.verifyTemplate);
-            }, tracker);
-      })
+      // .then(() => {
+      //   return util.runAsyncTask(
+      //       'Finding similar subgraphs', 30, () => {
+      //         h.templates = template.detect(h, params.verifyTemplate);
+      //       }, tracker);
+      // })
       .then(() => {
         return h;
       });
