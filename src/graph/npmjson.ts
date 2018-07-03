@@ -1,7 +1,7 @@
 import { GraphDef, FunctionDefLibraryDef, VersionDef, NodeDef } from "./tf_graph_common/proto";
 
 import * as _ from 'lodash';
-import { treemapResquarify } from "d3";
+import * as chunks from './chunks';
 
 export interface PackageLockDependency {
     version: string;
@@ -19,10 +19,14 @@ export interface PackageLock {
     dependencies: { [key: string]: PackageLockDependency; };
 }
 
+export interface NodeDefExt extends NodeDef{
+    version: string;
+    package: string;
+}
 
 ///////////////////////
 export class PackageLockGraph implements GraphDef {
-    node: NodeDef[] = [];
+    node: NodeDefExt[] = [];
 
     // Compatibility versions of the graph.
     versions: VersionDef[];
@@ -38,7 +42,7 @@ export class PackageLockGraph implements GraphDef {
         this.renameNodes();
     }
 
-    private nodeByKey: { [key: string]: NodeDef; } = {};
+    private nodeByKey: { [key: string]: NodeDefExt; } = {};
 
     private iterateDeps(parent: NodeDef, deps: { [key: string]: PackageLockDependency; }, depth: number) {
         Object.keys(deps).forEach(key => {
@@ -83,7 +87,7 @@ export class PackageLockGraph implements GraphDef {
 
 
 
-    private getOrCreateNode(key: string, dep: PackageLockDependency, depth: number): NodeDef {
+    private getOrCreateNode(key: string, dep: PackageLockDependency, depth: number): NodeDefExt {
 
         const kind = dep.dev ? "develoment" : "runtime";
         const dir = dep.dev ? "develoment/" : "";
@@ -94,7 +98,7 @@ export class PackageLockGraph implements GraphDef {
             return this.nodeByKey[nodeName];
         } else {
 
-            let n: NodeDef = <NodeDef>{
+            let n: NodeDefExt = <NodeDefExt>{
                 /** Name of the node */
                 name: nodeName,
                 /** List of nodes that are inputs for this node. */
@@ -105,7 +109,10 @@ export class PackageLockGraph implements GraphDef {
                 /** The name of the operation associated with this node. */
                 op: "OP",//dep.version,
                 /** List of attributes that describe/modify the operation. */
-                nodeAttributes: { 'label': key + " " + dep.version }
+                nodeAttributes: { 'label': key + " " + dep.version },
+
+                version:dep.version,
+                package:key
             };
 
             (n as any).requires = dep.requires;
@@ -164,7 +171,7 @@ export class PackageLockGraph implements GraphDef {
         this.node.forEach(x => {
             newName = renamingMap[x.name];
             if (newName) {
-                console.log(x.name + "=>" + renamingMap[x.name])
+                // console.log(x.name + "=>" + renamingMap[x.name])
                 x.name = renamingMap[x.name];
             }
 
@@ -182,38 +189,75 @@ export class PackageLockGraph implements GraphDef {
         );
     }
 
+    private buildSemanticStats(): { [key: string]: number } {
+        /**
+         * making groups
+         */
+        let stats = {};
+        this.node.forEach(x => {
+            let words = chunks.allSplits(x.package, '.-_ /@$');
+            chunks.countWords(words, stats);
+        })
+
+        let pairszFiltered = _.toPairs(stats).filter(x => x[1] > 1);
+        stats = _.fromPairs(pairszFiltered);
+        console.log(stats);
+        return stats;
+    }
+
+    private findBestGroup(groups: { [key: string]: number }, childGroup: string, delim: string): string|null {
+        let splits = chunks.allSplits(childGroup, delim);
+
+        let count = splits.map(x => [x, groups[x]]);
+        // let max = _.maxBy(count, x => (x.length / <number>x[1] ));
+        let max = _.maxBy(count, x => ( x.length));
+        if(max)
+            return <string>max[0];
+        else
+            return null;
+    }
+
     private renameNodes(): void {
         let renamingMap: { [key: string]: string; } = {};
+        const groups = this.buildSemanticStats();
 
         this.node.forEach(x => {
-            let prefix = this.getPrefixIfSplittable(x.name);
-
-            if (prefix) {
-                console.error(prefix);
-                let prefixed: NodeDef[] = this.findNodesByPrefix(prefix);
-                if (prefixed.length > 1) {
-                    this.schedueForRenaming(prefix, prefixed, renamingMap);
-                }
+            let originalGroups = x.package.split("/");
+            let childGroup = originalGroups.pop();
+            let additionalGroup = this.findBestGroup(groups, childGroup, ".-_");
+            if (additionalGroup) {
+                originalGroups.push(additionalGroup);
+                // originalGroups= [additionalGroup].concat(originalGroups);
             }
-
+            originalGroups.push(childGroup);
+            let newName = this.escape(originalGroups.join("/"));
+            renamingMap[x.name]=newName+"-"+x.version;
         });
+
+        // this.node.forEach(x => {
+        //     let prefix = this.getPrefixIfSplittable(x.name);
+
+        //     if (prefix) {
+        //         let prefixed: NodeDef[] = this.findNodesByPrefix(prefix);
+        //         if (prefixed.length > 1) {
+        //             this.schedueForRenaming(prefix, prefixed, renamingMap);
+        //         }
+        //     }
+
+        // });
 
         this.applyRenamingMap(renamingMap);
     }
 
 
     private nodeName(libName: string, libVersion: string) {
-        let n = this.escape(libName);//.split("@").join("_");
-        let v = this.escape(libVersion);
-
-        // n = n.split("-").join("/");
-        // n = n.split(".").join("/");
-
+        let n = libName;//this.escape(libName);
+        let v = libVersion;//this.escape(libVersion);
         return n + "-" + v;
     }
 
     private escape(key: string): string {
-        let k = key;//.split("@").join("_");
+        let k = key;
         k = k.split("@").join("_");
         k = k.split("#").join("_");
         k = k.split("^").join("_");
