@@ -71,7 +71,10 @@ export class NodeDefExt implements NodeDef {
         return this._output.map(x => x.target.name)
     }
     get input(): string[] {
-        return this._input.map(x => x.control? '^'+ x.target.name: x.target.name);
+        console.log("request for inputs");
+        return this._input.map(x =>   x.target.name );
+        
+        // return this._input.map(x => x.control? '^'+ x.target.name: x.target.name);
     }
 
     public link(other: NodeDefExt, control:boolean) {
@@ -230,8 +233,8 @@ export class PackageLockGraph implements GraphDef {
                 // originalGroups= [additionalGroup].concat(originalGroups);
             }
             originalGroups.push(childGroup);
-            let newName = this.escape(originalGroups.join("/"));
-            renamingMap[x.name] = newName + "-" + x.version;
+            let newName = originalGroups.join("/");
+            renamingMap[x.name] = this.escape(newName + "-" + x.version);
         });
 
         this.applyRenamingMap(renamingMap);
@@ -244,6 +247,8 @@ export class PackageLockGraph implements GraphDef {
         k = k.split("@").join("_");
         k = k.split("#").join("_");
         k = k.split("^").join("_");
+        k = k.split(".").join("_");
+        k = k.split("-").join("_");
 
         return k;
     }

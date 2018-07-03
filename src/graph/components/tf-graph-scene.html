@@ -457,8 +457,9 @@ limitations under the License.
 
   fill: none;
   stroke: url("#grad-edge");
-  stroke-linecap: round;
-  stroke-width: 0.75;
+  /* stroke: #bbb; */
+  stroke-linecap: square;
+  stroke-width: 0.5;
 }
 
  .edge .selectableedge {
@@ -493,7 +494,9 @@ limitations under the License.
 }
 
  .edge .control-dep {
-  stroke-dasharray: 2, 2;
+  /* stroke-dasharray: 2, 2; */
+  stroke-width: 0.3;
+  stroke: url("#grad-edge-control")!important;
 }
 
 /* --- Group node expand/collapse button --- */
@@ -568,6 +571,12 @@ limitations under the License.
 
 <svg id="svg">
   <defs>
+      <linearGradient id='grad-edge-control'>
+          <stop offset='10%' stop-color='#ccccff' />
+          <stop offset='100%' stop-color='#ffcccc' />
+        </linearGradient>
+
+
     <linearGradient id='grad-edge-in'>
       <stop offset='10%' stop-color='var(--kt-edge)' />
       <stop offset='100%' stop-color='var(--kt-in-edge-highlight)' />
