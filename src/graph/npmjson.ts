@@ -16,13 +16,15 @@ export interface PackageLockDependency {
 
 export interface PackageLock {
     name: string;
+    version: string;
     dependencies: { [key: string]: PackageLockDependency; };
 }
 
-interface  Link{
-    target:NodeDefExt;
-    control:boolean;
+interface Link {
+    target: NodeDefExt;
+    control: boolean;
 }
+
 export class NodeDefExt implements NodeDef {
     name: string;
     /** List of nodes that are inputs for this node. */
@@ -48,15 +50,15 @@ export class NodeDefExt implements NodeDef {
     constructor(key: string, dep: PackageLockDependency) {
 
         let n = this;
-        n.name = NodeDefExt.nodeName(key, dep.version);
+        this.name = NodeDefExt.nodeName(key, dep.version);
 
-        n.device = dep.dev ? "develoment" : "runtime";;
-        n.dev = dep.dev;
+        this.device = (dep.dev ? "develoment" : "runtime");
+        this.dev = dep.dev;
 
-        n.version = dep.version;
-        n.package = key;
-        n.nodeAttributes = { 'label': key + " " + dep.version };
-        n.op = "OP";
+        this.version = dep.version;
+        this.package = key;
+        this.nodeAttributes = { 'label': key + " " + dep.version };
+        this.op = "OP";
 
 
         (n as any).requires = dep.requires;
@@ -70,21 +72,22 @@ export class NodeDefExt implements NodeDef {
     get output(): string[] {
         return this._output.map(x => x.target.name)
     }
+
     get input(): string[] {
         console.log("request for inputs");
-        return this._input.map(x =>   x.target.name );
-        
+        return this._input.map(x => x.target.name);
+
         // return this._input.map(x => x.control? '^'+ x.target.name: x.target.name);
     }
 
-    public link(other: NodeDefExt, control:boolean) {
+    public link(other: NodeDefExt, control: boolean) {
         this._input.push({
-            target:other,
-            control:control
+            target: other,
+            control: control
         });
         other._output.push({
-            target:this,
-            control:control
+            target: this,
+            control: control
         });
     }
 }
@@ -101,7 +104,9 @@ export class PackageLockGraph implements GraphDef {
 
 
     constructor(json: PackageLock) {
-        this.iterateDeps(null, json.dependencies, 1);
+        let root = null//this.getOrCreateNode("ROOOOOT", <PackageLockDependency> {version:json.version})
+        // root.device="ROOT";
+        this.iterateDeps(root, json.dependencies, 1);
         this.linkRequiremens();
 
         this.renameNodes();
@@ -112,12 +117,14 @@ export class PackageLockGraph implements GraphDef {
     private iterateDeps(parent: NodeDefExt, deps: { [key: string]: PackageLockDependency; }, depth: number) {
         Object.keys(deps).forEach(key => {
             let dep = deps[key];
-            let nn = this.getOrCreateNode(key, dep, depth);
-            this.node.push(nn);
-            if(parent){
-                parent.link(nn,false);
+            let nn = this.getOrCreateNode(key, dep);
+
+            if (parent) {
+                nn.link(parent, dep.dev);
             }
-             
+
+
+
 
             if (dep.dependencies) {
                 this.iterateDeps(nn, dep.dependencies, depth + 1);
@@ -131,27 +138,41 @@ export class PackageLockGraph implements GraphDef {
             let req = (x as any).requires;
             if (req) {
                 Object.keys(req).forEach(requredName => {
-                    let linkedName = NodeDefExt.nodeName(requredName, req[requredName]);
+                    let version: string = req[requredName];
+
+
+
+                    let linkedName = NodeDefExt.nodeName(requredName, version);
                     let linkedNode = this.nodeByKey[linkedName];
 
                     if (!linkedNode) {
-                        console.error("cannot find node for name " + linkedName);
-                        console.error("available nodes  " + Object.keys(this.nodeByKey));
-                    } else {
-                        linkedNode.link(x, x.dev);
+
+                        let state = "missing";
+                        if (version[0] === '^') {
+                            state = "up";
+                        }
+                        if (version[0] === '~') {
+                            state = "tilda";
+                        }
+
+                        linkedNode = this.getOrCreateNode(requredName, <PackageLockDependency>{ version: req[requredName] });
+                        linkedNode.device = state;
+
+                        // console.error("cannot find node for name " + linkedName);
+                        // console.error("available nodes  " + Object.keys(this.nodeByKey));
                     }
+                    linkedNode.link(x, x.dev);
+
                 });
             }
         });
     }
 
-   
 
 
 
-    private getOrCreateNode(key: string, dep: PackageLockDependency, depth: number): NodeDefExt {
 
-
+    private getOrCreateNode(key: string, dep: PackageLockDependency): NodeDefExt {
 
         const nodeName = NodeDefExt.nodeName(key, dep.version);
 
@@ -160,6 +181,7 @@ export class PackageLockGraph implements GraphDef {
         } else {
             let n: NodeDefExt = new NodeDefExt(key, dep);
             this.nodeByKey[nodeName] = n;
+            this.node.push(n);
             return n;
         }
     }
@@ -188,67 +210,89 @@ export class PackageLockGraph implements GraphDef {
 
     }
 
-    private buildSemanticStats(): { [key: string]: number } {
-        /**
-         * making groups
-         */
-        let stats = {};
-        this.node.forEach(x => {
-            let words = chunks.allSplits(x.package, '.-_ /@$');
-            chunks.countWords(words, stats);
-        })
+    // private buildSemanticStats(): { [key: string]: number } {
+    //     /**
+    //      * making groups
+    //      */
+    //     let stats = {};
+    //     this.node.forEach(x => {
+    //         let words = chunks.allSplits(x.package, '.-_ /@$');
+    //         chunks.countWords(words, stats);
+    //     })
 
-        let pairszFiltered = _.toPairs(stats).filter(x => x[1] > 1);
-        stats = _.fromPairs(pairszFiltered);
-        console.log(stats);
-        return stats;
-    }
+    //     let pairszFiltered = _.toPairs(stats).filter(x => x[1] > 2 && x[0].length > 1);
+    //     stats = _.fromPairs(pairszFiltered);
+    //     console.log(stats);
+    //     return stats;
+    // }
 
-    private findBestGroup(groups: { [key: string]: number }, childGroup: string, delim: string): string | null {
-        let splits = chunks.allSplits(childGroup, delim);
-        let best = null;
-        let max = 0;
-        for (const ch of splits) {
-            if (groups[ch]) {
-                let val = ch.length * groups[ch];
-                if (val > max) {
-                    max = val;
-                    best = ch;
-                }
-            }
-        }
-        return best;
-    }
+    // private findBestGroup(groups: { [key: string]: number }, childGroup: string, delim: string): string | null {
+    //     let splits = chunks.allSplits(childGroup, delim);
+    //     splits.push(childGroup);
+    //     let best = null;
+    //     let max = 0;
+    //     for (const ch of splits) {
+    //         if (groups[ch]) {
+    //             let val = ch.length * groups[ch];
+    //             if (val > max) {
+    //                 max = val;
+    //                 best = ch;
+    //             }
+    //         }
+    //     }
+    //     return best;
+    // }
 
     private renameNodes(): void {
-        let renamingMap: { [key: string]: string; } = {};
-        const groups = this.buildSemanticStats();
+        const renamingMap: { [key: string]: string; } = {};
+        // const groups = this.buildSemanticStats();
+        const paths = {};
 
         this.node.forEach(x => {
-            let originalGroups = x.package.split("/");
-            let childGroup = originalGroups.pop();
-            let additionalGroup = this.findBestGroup(groups, childGroup, ".-_");
-            if (additionalGroup) {
-                originalGroups.push(additionalGroup);
-                // originalGroups= [additionalGroup].concat(originalGroups);
+            const path = x.package.split(/\.|-|#|_/).join("/");
+            if (paths[path]) {
+                paths[path]++;
+            } else {
+                paths[path] = 1;
             }
-            originalGroups.push(childGroup);
-            let newName = originalGroups.join("/");
-            renamingMap[x.name] = this.escape(newName + "-" + x.version);
         });
 
+
+
+        this.node.forEach(x => {
+            // let originalGroups = x.package.split("/");
+            // let childGroup = originalGroups.pop();
+            // let additionalGroup =  this.findBestGroup(groups, childGroup, ".-_");
+            // if (additionalGroup) {
+            //     originalGroups.push(additionalGroup);
+            //     // originalGroups= [additionalGroup].concat(originalGroups);
+            // }
+            // originalGroups.push(childGroup);
+            // let newName = originalGroups.join("/");
+            // renamingMap[x.name] = this.escape(newName + "-" + x.version);
+            let newName = x.package;
+            const path = newName.split(/\.|-|\#|_/).join("/");
+            if (paths[path] && paths[path] > 1) {
+                newName = path;
+            }
+            renamingMap[x.name] = this.escape(newName) + "_" + this.escapeVersion(x.version);
+
+        });
+        console.log(renamingMap);
         this.applyRenamingMap(renamingMap);
     }
 
 
-
+    private escapeVersion(key: string): string {
+        return key.split(/\W/).join("_");
+    }
     private escape(key: string): string {
-        let k = key;
-        k = k.split("@").join("_");
-        k = k.split("#").join("_");
-        k = k.split("^").join("_");
-        k = k.split(".").join("_");
-        k = k.split("-").join("_");
+        let k = key.split(/\.|-|\#|_|@|^/).join("_");
+        // k = k.split("@").join("_");
+        // k = k.split("#").join("_");
+        // k = k.split("^").join("_");
+        // k = k.split(".").join("_");
+        // k = k.split("-").join("_");
 
         return k;
     }
