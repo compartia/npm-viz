@@ -89,10 +89,10 @@ export class GraphScene extends Polymer.Element {
 
             let prevNode:NodeDef = null;
 
-            for (let i = 0; i < 215; i++) {
+            for (let i = 0; i < 1215; i++) {
 
-                let name = "group" + (i % 3) + '/string-' + (i % 5);
-                if (i % 2 == 0) {
+                let name = "group" + (i % 7) + '/string-' + (i % 5);
+                if (i % 2 == 10) {
                     name = "group" + (i % 4)+"/X";
                 }
                 let n: NodeDef = <NodeDef>{
@@ -103,7 +103,7 @@ export class GraphScene extends Polymer.Element {
                     input: [],
                     output: [],
                     /** The name of the device where the computation will run. */
-                    device: 'String' + (i % 3),
+                    device: 'String' + (i % 5),
                     /** The name of the operation associated with this node. */
                     op: 'OP-' + (i % 4),
                     /** List of attributes that describe/modify the operation. */

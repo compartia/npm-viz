@@ -117,11 +117,11 @@ export const PARAMS = {
     },
     /** Size of op nodes. */
     op: {
-      width: 15,
+      width: 70,
       height: 6,
       radius: 3,  // for making annotation touching ellipse
       labelOffset: -8,
-      maxLabelWidth: 30
+      maxLabelWidth: 60
     },
     /** Size of series nodes. */
     series: {
@@ -213,7 +213,7 @@ export const PARAMS = {
  * title "Auxiliary Nodes" is longer than the width of the auxiliary nodes
  * section itself.
  */
-export const MIN_AUX_WIDTH = 140;
+export const MIN_AUX_WIDTH = 0;//140;
 
 
 /** Calculate layout for a scene of a group node. */
