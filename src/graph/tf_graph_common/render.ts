@@ -114,7 +114,7 @@ const PARAMS = {
   /**
    * Whether to extract high degree nodes from the core part of the graph.
    */
-  enableExtraction: true,
+  enableExtraction: false,
   /**
    * The minimum number of nodes for a graph to have in order for high in and
    * out degree nodes to be extracted in auxiliary. The aim here is to prevent
@@ -171,7 +171,7 @@ const PARAMS = {
    * Whether to add bridge nodes and edges to the core when building the
    * subhierarchy of an expanded metanode. See buildSubhierarchy().
    */
-  enableBridgegraph: true,
+  enableBridgegraph: false,
 
   /**
    * 2 colors, for the minimum and maximum value respectively, whenever we

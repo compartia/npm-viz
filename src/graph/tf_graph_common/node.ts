@@ -710,6 +710,11 @@ export function getFillForNode(_svg, templateIndex:Function, colorBy:any,
 export function stylize(_svg:d3.Selection<any,any,any,any>, nodeGroup, renderInfo: render.RenderNodeInfo,
     sceneElement, nodeClass?) {
   nodeClass = nodeClass || Class.Node.SHAPE;
+  if(!renderInfo.node){
+    console.error("wrong node");
+    console.error(nodeGroup);
+    return;
+  }
   let isHighlighted = sceneElement.isNodeHighlighted(renderInfo.node.name);
   let isSelected = sceneElement.isNodeSelected(renderInfo.node.name);
   let isExtract = renderInfo.isInExtract ||
