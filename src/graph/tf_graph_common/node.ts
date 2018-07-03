@@ -394,7 +394,7 @@ function labelBuild(nodeGroup, renderNodeInfo: render.RenderNodeInfo, sceneEleme
     label.attr('font-size', scale(text.length) + 'px');
   }
 
-  let txtElement = <d3.Selection<any, any, any, any>>label.text(text);
+  let txtElement = label.text(text);
   enforceLabelWidth(txtElement, renderNodeInfo.node.type, renderNodeInfo);
   return label;
 }
@@ -509,22 +509,16 @@ function labelPosition(nodeGroup: d3.Selection<any, any, any, any>, cx: number, 
  * @return Selection of the shape.
  */
 export function buildShape(nodeGroup, d, nodeClass: string): d3.Selection<any, any, any, any> {
+  
   // Create a group to house the underlying visual elements.
   let shapeGroup = scene.selectOrCreateChild(nodeGroup, 'g', nodeClass);
   // TODO: DOM structure should be templated in HTML somewhere, not JS.
   switch (d.node.type) {
     case NodeType.OP:
-    const opNode = d.node as OpNode;
-    if (_.isNumber(opNode.functionInputIndex) ||
-        _.isNumber(opNode.functionOutputIndex)) {
-      // This is input or output arg for a TensorFlow function. Use a special
-      // shape (a triangle) for them.
-      scene.selectOrCreateChild(
-          shapeGroup, 'polygon', Class.Node.COLOR_TARGET);
-      break;
-    }
-    scene.selectOrCreateChild(shapeGroup, 'ellipse', Class.Node.COLOR_TARGET);
+     
 
+        scene.selectOrCreateChild(shapeGroup, 'rect', Class.Node.COLOR_TARGET);
+            // .attr({ rx: r, ry: r });
 
         break;
 
@@ -545,15 +539,15 @@ export function buildShape(nodeGroup, d, nodeClass: string): d3.Selection<any, a
       scene.selectOrCreateChild(shapeGroup, 'rect', Class.Node.COLOR_TARGET)
           .attr('rx', d.radius).attr('ry', d.radius);
       break;
+    
     case NodeType.BRIDGE:
       scene.selectOrCreateChild(shapeGroup, 'rect', Class.Node.COLOR_TARGET)
           .attr('rx', d.radius).attr('ry', d.radius);
       break;
+    
     case NodeType.META:
-        // let rr = d.radius;
-        let rr=1;
-        scene.selectOrCreateChild(shapeGroup, 'rect', Class.Node.COLOR_TARGET)
-          .attr('rx', rr).attr('ry',rr);
+      scene.selectOrCreateChild(shapeGroup, 'rect', Class.Node.COLOR_TARGET)
+          .attr('rx', d.radius).attr('ry', d.radius);
       break;
     default:
       throw Error('Unrecognized node type: ' + d.node.type);
