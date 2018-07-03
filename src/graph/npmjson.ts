@@ -19,11 +19,15 @@ export interface PackageLock {
     dependencies: { [key: string]: PackageLockDependency; };
 }
 
+interface  Link{
+    target:NodeDefExt;
+    control:boolean;
+}
 export class NodeDefExt implements NodeDef {
     name: string;
     /** List of nodes that are inputs for this node. */
-    private _input: NodeDefExt[] = [];
-    private _output: NodeDefExt[] = [];
+    private _input: Link[] = [];
+    private _output: Link[] = [];
     /** The name of the device where the computation will run. */
     device: string;
     /** The name of the operation associated with this node. */
@@ -34,20 +38,51 @@ export class NodeDefExt implements NodeDef {
     nodeAttributes: { [key: string]: any; };
 
 
+    static nodeName(libName: string, libVersion: string) {
+        let n = libName;//this.escape(libName);
+        let v = libVersion;//this.escape(libVersion);
+        return n + "-" + v;
+    }
+
+
+    constructor(key: string, dep: PackageLockDependency) {
+
+        let n = this;
+        n.name = NodeDefExt.nodeName(key, dep.version);
+
+        n.device = dep.dev ? "develoment" : "runtime";;
+        n.dev = dep.dev;
+
+        n.version = dep.version;
+        n.package = key;
+        n.nodeAttributes = { 'label': key + " " + dep.version };
+        n.op = "OP";
+
+
+        (n as any).requires = dep.requires;
+    }
+
+
     version: string;
     package: string;
     dev: boolean;
 
     get output(): string[] {
-        return this._output.map(x => x.name)
+        return this._output.map(x => x.target.name)
     }
     get input(): string[] {
-        return this._input.map(x => x.name)
+        return this._input.map(x => x.control? '^'+ x.target.name: x.target.name);
     }
 
-    public link(other: NodeDefExt) {
-        this._input.push(other);
-        other._output.push(this);
+    public link(other: NodeDefExt, control:boolean) {
+        this._input.push({
+            target:other,
+            control:control
+        });
+        other._output.push({
+            target:this,
+            control:control
+        });
     }
 }
 
@@ -76,7 +111,10 @@ export class PackageLockGraph implements GraphDef {
             let dep = deps[key];
             let nn = this.getOrCreateNode(key, dep, depth);
             this.node.push(nn);
-            this.linkNodes(parent, nn);
+            if(parent){
+                parent.link(nn,false);
+            }
+             
 
             if (dep.dependencies) {
                 this.iterateDeps(nn, dep.dependencies, depth + 1);
@@ -90,70 +128,34 @@ export class PackageLockGraph implements GraphDef {
             let req = (x as any).requires;
             if (req) {
                 Object.keys(req).forEach(requredName => {
-                    let linkedName = this.nodeName(requredName, req[requredName]);
+                    let linkedName = NodeDefExt.nodeName(requredName, req[requredName]);
                     let linkedNode = this.nodeByKey[linkedName];
 
                     if (!linkedNode) {
                         console.error("cannot find node for name " + linkedName);
                         console.error("available nodes  " + Object.keys(this.nodeByKey));
                     } else {
-                        linkedNode.link(x);
+                        linkedNode.link(x, x.dev);
                     }
-
-
                 });
             }
         });
     }
 
-    private linkNodes(from: NodeDefExt, to: NodeDefExt) {
-        if (from && to)
-            from.link(to);
-    }
+   
 
 
 
     private getOrCreateNode(key: string, dep: PackageLockDependency, depth: number): NodeDefExt {
 
-        const kind = dep.dev ? "develoment" : "runtime";
-        const dir = dep.dev ? "develoment/" : "";
 
-        const nodeName = this.nodeName(key, dep.version);
+
+        const nodeName = NodeDefExt.nodeName(key, dep.version);
 
         if (this.nodeByKey[nodeName]) {
             return this.nodeByKey[nodeName];
         } else {
-
-            let n: NodeDefExt = new NodeDefExt();
-            n.name = nodeName;
-            n.device = kind + "-" + depth;
-            n.dev = dep.dev;
-            n.version = dep.version;
-            n.package = key;
-            n.nodeAttributes = { 'label': key + " " + dep.version };
-            n.op = "OP";
-
-            // let __n: NodeDefExt = <NodeDefExt>{
-            //     /** Name of the node */
-            //     name: nodeName,
-            //     /** List of nodes that are inputs for this node. */
-            //     input: [],
-            //     output: [],
-            //     /** The name of the device where the computation will run. */
-            //     device: kind + "-" + depth,
-            //     /** The name of the operation associated with this node. */
-            //     op: "OP",//dep.version,
-            //     /** List of attributes that describe/modify the operation. */
-            //     nodeAttributes: { 'label': key + " " + dep.version },
-
-            //     version: dep.version,
-            //     package: key,
-            //     dev: dep.dev
-            // };
-
-            (n as any).requires = dep.requires;
-
-
+            let n: NodeDefExt = new NodeDefExt(key, dep);
             this.nodeByKey[nodeName] = n;
             return n;
         }
@@ -236,11 +238,6 @@ export class PackageLockGraph implements GraphDef {
     }
 
 
-    private nodeName(libName: string, libVersion: string) {
-        let n = libName;//this.escape(libName);
-        let v = libVersion;//this.escape(libVersion);
-        return n + "-" + v;
-    }
 
     private escape(key: string): string {
         let k = key;
