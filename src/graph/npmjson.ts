@@ -246,18 +246,43 @@ export class PackageLockGraph implements GraphDef {
     private renameNodes(): void {
         const renamingMap: { [key: string]: string; } = {};
         // const groups = this.buildSemanticStats();
-        const paths = {};
+        //        const paths = {};
+        const root = {};
 
+        const SPLIT = /\.|-|#|_/;
         this.node.forEach(x => {
-            const path = x.package.split(/\.|-|#|_/).join("/");
-            if (paths[path]) {
-                paths[path]++;
-            } else {
-                paths[path] = 1;
+            const path = x.package.split(SPLIT);//.join("/");
+
+            let leaf: any = root;
+            for (const chunk of path) {
+                if (leaf[chunk]) {
+                    leaf[chunk].count++;
+                } else {
+                    leaf[chunk] = {};
+                    leaf[chunk].count = 1;
+                }
+                leaf = leaf[chunk];
             }
+
         });
 
+        console.log(root);
 
+        const findLeaf = (path: string[]) => {
+            let joined: string[] = [];
+            let leaf: any = root;
+            for (const chunk of path) {
+
+                if (leaf[chunk] && leaf[chunk].count > 1) {
+                    joined.push(chunk);
+
+                    leaf = leaf[chunk];
+                } else {
+                    return joined;
+                }
+            }
+            return joined;
+        }
 
         this.node.forEach(x => {
             // let originalGroups = x.package.split("/");
@@ -271,9 +296,10 @@ export class PackageLockGraph implements GraphDef {
             // let newName = originalGroups.join("/");
             // renamingMap[x.name] = this.escape(newName + "-" + x.version);
             let newName = x.package;
-            const path = newName.split(/\.|-|\#|_/).join("/");
-            if (paths[path] && paths[path] > 1) {
-                newName = path;
+            const path: string[] = newName.split(SPLIT);//.join("/");
+            let bestDir = findLeaf(path);
+            if (bestDir && bestDir.length > 0) {
+                newName = bestDir.join("/") + "/" + x.package;
             }
             renamingMap[x.name] = this.escape(newName) + "_" + this.escapeVersion(x.version);
 
