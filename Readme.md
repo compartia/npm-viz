@@ -1,6 +1,6 @@
 # My-App
 
-Polymer ES6-typeScript module 
+api example: http://registry.npmjs.org/acorn/5.7.1
 
 ## command
 

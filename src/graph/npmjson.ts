@@ -25,7 +25,20 @@ interface Link {
     control: boolean;
 }
 
+const RES = {
+    UNRESOLVED: "range",
+    UNRESOLVED_MIDDLE: "tilda",
+    UNRESOLVED_MAJOR: "caret",
+    RESOLVED: "res"
+}
+
 export class NodeDefExt implements NodeDef {
+
+    static UNRESOLVED = "range";
+    static UNRESOLVED_MIDDLE = "tilda";
+    static UNRESOLVED_MAJOR = "caret";
+
+
     name: string;
     /** List of nodes that are inputs for this node. */
     private _input: Link[] = [];
@@ -38,6 +51,11 @@ export class NodeDefExt implements NodeDef {
     // attr:{ key: string; value: any; }[]; 
 
     nodeAttributes: { [key: string]: any; };
+    resolved: boolean = true;
+
+    public isUnresolved() {
+        return this.resolved;
+    }
 
     static nodeName(libName: string, libVersion: string) {
         let n = libName;//this.escape(libName);
@@ -74,12 +92,18 @@ export class NodeDefExt implements NodeDef {
 
     get input(): string[] {
         console.log("request for inputs");
-        return this._input.map(x => x.target.name);
+        // return this._input.map(x => x.target.name);
 
-        // return this._input.map(x => x.control? '^'+ x.target.name: x.target.name);
+        return this._input.map(x => x.control ? '^' + x.target.name : x.target.name);
     }
 
     public link(other: NodeDefExt, control: boolean) {
+        // let contains =false;
+        for(const l of this._input){
+            if(l.target===other){
+                return l;
+            }
+        }
         this._input.push({
             target: other,
             control: control
@@ -109,10 +133,33 @@ export class PackageLockGraph implements GraphDef {
         // root.device="ROOT";
         this.linkDependentPackages(root, json.dependencies, 1);
         this.linkRequiremens();
-
+        this.linkUnresolved();
         this.renameNodes();
     }
 
+    private linkUnresolved() {
+        for (const n of this.node) {
+            let versions = this._nodesByPackageName[n.package];
+
+            let resolved: NodeDefExt[] = [];
+            let unresolved: NodeDefExt[] = [];
+            for (const version in versions) {
+                let instance = versions[version];
+                if (instance.isUnresolved()) {
+                    unresolved.push(instance);
+                } else {
+                    resolved.push(instance);
+                }
+
+            }
+
+            for (let u of unresolved) {
+                for (let r of resolved) {
+                    u.link(r, true);
+                }
+            }
+        }
+    }
 
 
     private linkDependentPackages(parent: NodeDefExt, deps: { [key: string]: PackageLockDependency; }, depth: number) {
@@ -121,7 +168,7 @@ export class PackageLockGraph implements GraphDef {
             let graphNode = this.getOrCreateNode(packageName, dep);
 
             if (parent) {
-                graphNode.link(parent, dep.dev);
+                graphNode.link(parent, false/* dep.dev*/);
             }
 
 
@@ -130,6 +177,18 @@ export class PackageLockGraph implements GraphDef {
             }
         });
     }
+
+    /**
+     * multiple versions by library name
+     */
+    private _nodesByPackageName: { [key: string]: {} } = {};
+    private indexPackageVersion(versioned: NodeDefExt) {
+        if (!this._nodesByPackageName[versioned.package]) {
+            this._nodesByPackageName[versioned.package] = [];
+        }
+        this._nodesByPackageName[versioned.package][versioned.version] = versioned;
+    }
+
 
     private linkRequiremens() {
         this.node.forEach((x) => {
@@ -144,21 +203,22 @@ export class PackageLockGraph implements GraphDef {
 
                     if (!linkedNode) {
 
-                        let state = "missing";
+                        let state = RES.UNRESOLVED;
                         if (version[0] === '^') {
-                            state = "up";
+                            state = RES.UNRESOLVED_MAJOR;
                         }
                         if (version[0] === '~') {
-                            state = "tilda";
+                            state = RES.UNRESOLVED_MIDDLE;
                         }
 
                         linkedNode = this.getOrCreateNode(requredName, <PackageLockDependency>{ version: req[requredName] });
                         linkedNode.device = state;
+                        linkedNode.resolved = false;
 
                         // console.error("cannot find node for name " + linkedName);
                         // console.error("available nodes  " + Object.keys(this.nodeByKey));
                     }
-                    linkedNode.link(x, x.dev);
+                    linkedNode.link(x, linkedNode.isUnresolved()/* x.dev*/);
 
                 });
             }
@@ -178,6 +238,7 @@ export class PackageLockGraph implements GraphDef {
         } else {
             let n: NodeDefExt = new NodeDefExt(key, dep);
             this.nodeByKey[nodeName] = n;
+            this.indexPackageVersion(n);
             this.node.push(n);
             return n;
         }
