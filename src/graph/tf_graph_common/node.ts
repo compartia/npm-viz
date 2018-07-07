@@ -669,6 +669,11 @@ export function getFillForNode(_svg, templateIndex:Function, colorBy:any,
         // Op nodes are white.
         return 'white';
       }
+      case ColorBy.CARDINALITY:
+        return isExpanded ?
+          colorParams.EXPANDED_COLOR : renderInfo.cardinalityColor ||
+          colorParams.UNKNOWN;
+
       case ColorBy.DEVICE:
       if (renderInfo.deviceColors == null) {
         // Return the hue for unknown device.

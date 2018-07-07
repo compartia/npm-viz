@@ -177,7 +177,7 @@ const PARAMS = {
    * 2 colors, for the minimum and maximum value respectively, whenever we
    * have a gradient scale.
    */
-  minMaxColors: ['#fff5f0', '#fb6a4a'],
+  minMaxColors: ['#fff5f0', '#fb4a6a'],
 
   /**
    * Maximum number of annotations to be displayed on a node before an
@@ -209,7 +209,7 @@ export class RenderGraphInfo {
   renderedOpNames: string[];
   deviceColorMap?: d3.ScaleOrdinal<string, string>;
   xlaClusterColorMap?: d3.ScaleOrdinal<string, string>;
-  memoryUsageScale?: d3.ScaleLinear<string, string>;
+  cardinalityScale?: d3.ScaleLinear<string, string>;
   computeTimeScale?: d3.ScaleLinear<string, string>;
   /** Scale for the thickness of edges when there is no shape information. */
   edgeWidthSizedBasedScale?:
@@ -258,17 +258,18 @@ export class RenderGraphInfo {
                 MetanodeColors.XLA_CLUSTER_PALETTE));
 
     let topLevelGraph = this.hierarchy.root.metagraph;
-    // Find the maximum memory usage. Use 0 as the minimum.
-    let maxMemory:any = d3.max(topLevelGraph.nodes(),
-        (nodeName, index) => {
-      let node = topLevelGraph.node(nodeName);
-      // Some ops don't have stats at all.
-      if (node.stats != null) {
-        return node.stats.totalBytes;
-      }
-    });
-    this.memoryUsageScale = d3.scaleLinear<string, string>()
-        .domain([0, maxMemory!])
+    
+    const maxCardinality: any = d3.max(topLevelGraph.nodes(),
+      (nodeName, index) => {
+        let node = topLevelGraph.node(nodeName);
+        // Some ops don't have stats at all.
+        if (node.cardinality != null) {
+          return node.cardinality;
+        }
+      });
+
+    this.cardinalityScale = d3.scaleLinear<string, string>()
+        .domain([0, maxCardinality!])
         .range(PARAMS.minMaxColors);
 
     // Find the maximum compute time. Use 0 as the minimum.
@@ -332,8 +333,10 @@ export class RenderGraphInfo {
     this.index[nodeName] = renderInfo;
     this.renderedOpNames.push(nodeName);
 
-    if (node.stats) {
-      renderInfo.memoryColor = this.memoryUsageScale!(node.stats.totalBytes);
+    renderInfo.cardinalityColor = this.cardinalityScale(node.cardinality);
+
+    if (node.stats) {       
+      
       renderInfo.computeTimeColor =
           this.computeTimeScale!(node.stats.getTotalMicros());
     }
@@ -1592,10 +1595,8 @@ export class RenderNodeInfo {
    */
   xlaClusterColor: string;
 
-  /**
-   * Color according to the memory usage of this node.
-   */
-  memoryColor: string;
+
+  cardinalityColor: string;
 
   /**
    * Color according to the compute time of this node.

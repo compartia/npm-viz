@@ -211,7 +211,7 @@ export class TfGraphElement extends Polymer.Element {
 
       (this as any)._setColorByParams({
         compute_time: getColorParamsFromScale(renderGraph.computeTimeScale),
-        memory: getColorParamsFromScale(renderGraph.memoryUsageScale),
+        cardinality: getColorParamsFromScale(renderGraph.cardinalityScale),
         device: _.map(renderGraph.deviceColorMap.domain(),
             function(deviceName) {
           return {

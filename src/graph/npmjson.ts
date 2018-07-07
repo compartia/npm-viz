@@ -39,7 +39,6 @@ export class NodeDefExt implements NodeDef {
 
     nodeAttributes: { [key: string]: any; };
 
-
     static nodeName(libName: string, libVersion: string) {
         let n = libName;//this.escape(libName);
         let v = libVersion;//this.escape(libVersion);
@@ -47,17 +46,17 @@ export class NodeDefExt implements NodeDef {
     }
 
 
-    constructor(key: string, dep: PackageLockDependency) {
+    constructor(packageName: string, dep: PackageLockDependency) {
 
         let n = this;
-        this.name = NodeDefExt.nodeName(key, dep.version);
+        this.name = NodeDefExt.nodeName(packageName, dep.version);
 
         this.device = (dep.dev ? "develoment" : "runtime");
         this.dev = dep.dev;
 
         this.version = dep.version;
-        this.package = key;
-        this.nodeAttributes = { 'label': key + " " + dep.version };
+        this.package = packageName;
+        this.nodeAttributes = { 'label': packageName + " " + dep.version };
         this.op = "OP";
 
 
@@ -102,32 +101,32 @@ export class PackageLockGraph implements GraphDef {
     // Contains a library of functions that may composed through the graph.
     library: FunctionDefLibraryDef;
 
+    //index for faster access
+    private nodeByKey: { [key: string]: NodeDefExt; } = {};
 
     constructor(json: PackageLock) {
-        let root = null//this.getOrCreateNode("ROOOOOT", <PackageLockDependency> {version:json.version})
+        let root = null;//this.getOrCreateNode("ROOOOOT", <PackageLockDependency> {version:json.version})
         // root.device="ROOT";
-        this.iterateDeps(root, json.dependencies, 1);
+        this.linkDependentPackages(root, json.dependencies, 1);
         this.linkRequiremens();
 
         this.renameNodes();
     }
 
-    private nodeByKey: { [key: string]: NodeDefExt; } = {};
 
-    private iterateDeps(parent: NodeDefExt, deps: { [key: string]: PackageLockDependency; }, depth: number) {
-        Object.keys(deps).forEach(key => {
-            let dep = deps[key];
-            let nn = this.getOrCreateNode(key, dep);
+
+    private linkDependentPackages(parent: NodeDefExt, deps: { [key: string]: PackageLockDependency; }, depth: number) {
+        Object.keys(deps).forEach(packageName => {
+            let dep = deps[packageName];
+            let graphNode = this.getOrCreateNode(packageName, dep);
 
             if (parent) {
-                nn.link(parent, dep.dev);
+                graphNode.link(parent, dep.dev);
             }
 
 
-
-
             if (dep.dependencies) {
-                this.iterateDeps(nn, dep.dependencies, depth + 1);
+                this.linkDependentPackages(graphNode, dep.dependencies, depth + 1);
             }
         });
     }
@@ -139,8 +138,6 @@ export class PackageLockGraph implements GraphDef {
             if (req) {
                 Object.keys(req).forEach(requredName => {
                     let version: string = req[requredName];
-
-
 
                     let linkedName = NodeDefExt.nodeName(requredName, version);
                     let linkedNode = this.nodeByKey[linkedName];
@@ -196,19 +193,7 @@ export class PackageLockGraph implements GraphDef {
 
 
 
-    private applyRenamingMap(renamingMap: { [key: string]: string; }) {
-        let newName;
-        this.nodeByKey = {};
-        this.node.forEach(x => {
-            newName = renamingMap[x.name];
-            if (newName) {
-                x.name = renamingMap[x.name];
-            }
-            this.nodeByKey[x.name] = x;
-        });
 
-
-    }
 
     // private buildSemanticStats(): { [key: string]: number } {
     //     /**
@@ -284,7 +269,10 @@ export class PackageLockGraph implements GraphDef {
             return joined;
         }
 
+        // let _nodec=0;
         this.node.forEach(x => {
+            // _nodec++;
+            // let group="Group-"+x.package[0].toUpperCase();
             // let originalGroups = x.package.split("/");
             // let childGroup = originalGroups.pop();
             // let additionalGroup =  this.findBestGroup(groups, childGroup, ".-_");
@@ -301,6 +289,7 @@ export class PackageLockGraph implements GraphDef {
             if (bestDir && bestDir.length > 0) {
                 newName = bestDir.join("/") + "/" + x.package;
             }
+
             renamingMap[x.name] = this.escape(newName) + "_" + this.escapeVersion(x.version);
 
         });
@@ -308,18 +297,26 @@ export class PackageLockGraph implements GraphDef {
         this.applyRenamingMap(renamingMap);
     }
 
+    private applyRenamingMap(renamingMap: { [key: string]: string; }) {
+        let newName;
+        this.nodeByKey = {};
+        this.node.forEach(x => {
+            newName = renamingMap[x.name];
+            if (newName) {
+                x.name = renamingMap[x.name];
+            }
+            this.nodeByKey[x.name] = x;
+        });
+
+
+    }
 
     private escapeVersion(key: string): string {
         return key.split(/\W/).join("_");
     }
+
     private escape(key: string): string {
         let k = key.split(/\.|-|\#|_|@|^/).join("_");
-        // k = k.split("@").join("_");
-        // k = k.split("#").join("_");
-        // k = k.split("^").join("_");
-        // k = k.split(".").join("_");
-        // k = k.split("-").join("_");
-
         return k;
     }
 }

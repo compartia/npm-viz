@@ -163,11 +163,7 @@ limitations under the License.
     op_start_rel_micros: number;
     op_end_rel_micros: number;
     all_end_rel_micros: number;
-    memory: {
-      allocator_name: string;
-      total_bytes: number;  // Stored as string in json and should be parsed.
-      peak_bytes: number;   // Stored as string in json and should be parsed.
-    }[];
+     
     /** Output sizes recorded for a single execution of a graph node */
     output: NodeOutput[];
     timeline_label: string;
