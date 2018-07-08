@@ -122,109 +122,7 @@ class HierarchyImpl implements Hierarchy {
   }
 
    
-  /**
-   * Given the name of a node in this hierarchy, get its bridgegraph, creating
-   * it on the fly if necessary. If the node is not a GroupNode, then this
-   * method returns null. If the provided name does not map to a node in the
-   * hierarchy, an error will be thrown.
-   */
-  getBridgegraph(nodeName: string): GraphEx | null {
-    return null;
-    let node = this.index[nodeName];
-    if (!node) {
-      throw Error('Could not find node in hierarchy: ' + nodeName);
-    }
-    if (!('metagraph' in node)) {
-      return null;
-    }
-    let groupNode = <GroupNode> node;
-    if (groupNode.bridgegraph) {
-      return groupNode.bridgegraph;
-    }
-    let bridgegraph = groupNode.bridgegraph =
-        createGraph<GroupNode|OpNode, Metaedge>(
-            'BRIDGEGRAPH', GraphType.BRIDGE, this.graphOptions);
-    if (!node.parentNode || !('metagraph' in node.parentNode)) {
-      return bridgegraph;
-    }
-
-    let parentNode = <GroupNode>node.parentNode;
-    let parentMetagraph:  GraphEx= parentNode.metagraph;
-     
-
-    // For each of the parent node's two Metaedge containing graphs, process
-    // each Metaedge involving this node.
-    _.each([parentMetagraph/*, parentBridgegraph*/], (parentGraph: GraphEx) => {
-
-      if(!parentGraph) return;
-
-      if(!parentGraph.edges()){
-        console.error("parentGraph.edges is "+parentGraph.edges());
-      }
-      
-      const chain = _(parentGraph.edges())
-        .filter(e => e.v === nodeName || e.w === nodeName)
-        .each(parentEdgeObj => {
-          try{
-            let inbound = parentEdgeObj.w === nodeName;
-            let parentMetaedge = parentGraph.edge(parentEdgeObj);
-
-            // The parent's Metaedge represents some number of underlying
-            // BaseEdges from the original full graph. For each of those, we need
-            // to determine which immediate child is involved and make sure
-            // there's a Metaedge in the bridgegraph that covers it.
-            _.each(parentMetaedge.baseEdgeList, baseEdge => {
-
-              // Based on the direction, figure out which is the descendant node
-              // and which is the 'other' node (sibling of parent or ancestor).
-              let [descendantName, otherName] =
-                inbound ?
-                  [baseEdge.w, parentEdgeObj.v] :
-                  [baseEdge.v, parentEdgeObj.w];
-
-              // Determine the immediate child containing this descendant node.
-              let childName = this.getChildName(nodeName, descendantName);
-
-              // Look for an existing Metaedge in the bridgegraph (or create a
-              // new one) that covers the relationship between child and other.
-              let bridgeEdgeObj = <graphlib.EdgeObject> {
-                v: inbound ? otherName : childName,
-                w: inbound ? childName : otherName,
-              };
-              let bridgeMetaedge = bridgegraph.edge(bridgeEdgeObj);
-              if (!bridgeMetaedge) {
-                bridgeMetaedge = createMetaedge(bridgeEdgeObj.v, bridgeEdgeObj.w);
-                bridgeMetaedge.inbound = inbound;
-                bridgegraph.setEdge(bridgeEdgeObj.v, bridgeEdgeObj.w,
-                    bridgeMetaedge);
-              }
-
-              // Copy the BaseEdge from the parent's Metaedge into this
-              // bridgegraph Metaedge.
-              bridgeMetaedge.addBaseEdge(baseEdge, this);
-            });
-          
-          }catch (e){
-            console.error(e)
-          }
-          
-        })
-        .value();
-
-        // try{
-        //   chain.value(); // force lodash chain execution.
-        //   console.error("chain");
-        //   console.log(chain);
-        // }catch (e){
-        //   console.error(e)
-        //   console.log(chain);
-        // }
-        
-        
-    });
-
-    return bridgegraph;
-  }
+   
 
   /**
    * Utility function for determining the name of the immediate child under a
@@ -325,9 +223,7 @@ class HierarchyImpl implements Hierarchy {
     }
     let parentNode = <GroupNode> node.parentNode;
     let metagraph = parentNode.metagraph;
-    let bridgegraph = this.getBridgegraph(parentNode.name);
     findEdgeTargetsInGraph(metagraph, node, inEdges, edges);
-    findEdgeTargetsInGraph(bridgegraph, node, inEdges, edges);
     return edges;
   }
 
