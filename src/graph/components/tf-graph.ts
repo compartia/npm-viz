@@ -3,6 +3,7 @@ import "polymer/polymer.html";
 import { customElement, property } from 'taktik-polymer-typescript';
 import './tf-graph.html'
 import './tf-graph-scene'
+import '../../components/package-info'
 
 import * as render from '../tf_graph_common/render';
 import * as graph from '../tf_graph_common/graph';

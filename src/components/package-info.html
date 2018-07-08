@@ -1,0 +1,39 @@
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+
+<dom-module id="package-info">
+    <template>
+        <style>
+            .keyword {
+                border: 1px solid salmon;
+                border-radius: 3px;
+                padding: 3px;
+                margin: 3px;
+                display: inline-block;
+            }
+        </style>
+        <!-- <iron-request id="apiRequest"></iron-request> -->
+
+        <iron-ajax id="apiRequest" url="http://localhost:5000/[[slectedNode.nodeAttributes.package]]/[[slectedNode.nodeAttributes.version]]"
+            handle-as="json" last-response="{{jsonLoaded}}" method="GET" debounce-duration="300"></iron-ajax>
+
+        <template is="dom-if" if="[[jsonLoaded]]">
+
+            <div>
+                [[selectedNode.name]] Package: [[package.nodeAttributes.package]]/[[package.version]]
+                <br> [[jsonLoaded.name]] [[jsonLoaded.version]]
+                <br>
+                <!-- [[jsonLoaded.keywords]] -->
+                <template is="dom-repeat" items="[[jsonLoaded.keywords]]">
+                    <div class="keyword">[[item]]</div>
+                </template>
+
+                <!-- <template is="dom-repeat" items="[[jsonLoaded.dependencies]]">
+                                    <div class="keyword">[[item]]</div>
+                                </template> -->
+            </div>
+        </template>
+
+    </template>
+</dom-module>

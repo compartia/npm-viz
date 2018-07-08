@@ -19,5 +19,13 @@
   },
   "devDependencies": {
     "web-component-tester": "^6.3.0"
+  },
+  "resolutions": {
+    "polymer": "^2.0.0",
+    "webcomponentsjs": "^v1.1.0",
+    "iron-flex-layout": "^2.0.3",
+    "iron-resizable-behavior": "^2.0.0",
+    "iron-icon": "^2.0.1",
+    "iron-iconset-svg": "^2.1.0"
   }
 }
