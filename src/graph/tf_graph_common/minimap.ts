@@ -67,18 +67,24 @@ export class Minimap {
    * @param maxWandH The maximum width/height for the minimap.
    * @param labelPadding Padding in pixels due to the main graph labels.
    */
-  constructor(svg: SVGSVGElement, zoomG: SVGGElement,
-      mainZoom: d3.ZoomBehavior<any, any>, minimap: HTMLElement,
-      maxWandH: number, labelPadding: number) {
+  constructor(
+      svg: SVGSVGElement, 
+      zoomG: SVGGElement,
+      mainZoom: d3.ZoomBehavior<any, any>, 
+      minimap: HTMLElement,
+      maxWandH: number, labelPadding: number, 
+      minimapSvg: SVGSVGElement) {
+
     this.svg = svg;
     this.labelPadding = labelPadding;
     this.zoomG = zoomG;
     this.mainZoom = mainZoom;
     this.maxWandH = maxWandH;
     let $minimap = d3.select(minimap);
+
     // The minimap will have 2 main components: the canvas showing the content
     // and an svg showing a rectangle of the currently zoomed/panned viewpoint.
-    let $minimapSvg = $minimap.select('#minimapSvg');
+    let $minimapSvg = d3.select(minimapSvg);
 
     // Make the viewpoint rectangle draggable.
     let $viewpoint = $minimapSvg.select('rect');
@@ -140,12 +146,7 @@ export class Minimap {
    * was updated (e.g. when a node was expanded).
    */
   update(): void {
-
-    if(true){
-      console.error("TODO");
-      return;
-    }
-
+ 
     let sceneSize:SVGRect|null = null;
     try {
       // Get the size of the entire scene.
