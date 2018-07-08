@@ -36,14 +36,14 @@ export class GraphScene extends Polymer.Element {
         this.set("slectedNode", node);
         console.log(node);
 
-        if(!node.isGroupNode){
+        if (node && !node.isGroupNode) {
             this.$.apiRequest.generateRequest();
-        }else{
+        } else {
             this.set("jsonLoaded", null);
         }
     }
 
-    private onJsonLoaded(e){
+    private onJsonLoaded(e) {
         console.log(this.jsonLoaded);
     }
 }
