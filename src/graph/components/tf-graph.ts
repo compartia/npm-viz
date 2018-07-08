@@ -247,8 +247,7 @@ export class TfGraphElement extends Polymer.Element {
     return this.renderHierarchy.getNearestVisibleAncestor(name);
   }
 
-  static
-  listeners= {
+  static listeners= {
     'graph-select': '_graphSelected',
     'disable-click': '_disableClick',
     'enable-click': '_enableClick',

@@ -374,7 +374,7 @@ export class GraphScene extends Polymer.Element {
     }
 
     public fire(eventName:string, value?:any ):void{
-        console.log("firing "+eventName);
+        // console.log("firing "+eventName);
         this.dispatchEvent(new CustomEvent(eventName, {bubbles: true,  detail:value}));
     }
 
