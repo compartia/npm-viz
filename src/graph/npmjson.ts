@@ -70,11 +70,15 @@ export class NodeDefExt implements NodeDef {
         this.name = NodeDefExt.nodeName(packageName, dep.version);
 
         this.device = (dep.dev ? "develoment" : "runtime");
-        this.dev = dep.dev;
+        // this.dev = dep.dev;
 
-        this.version = dep.version;
-        this.package = packageName;
-        this.nodeAttributes = { 'label': packageName + " " + dep.version };
+        // this.version = dep.version;
+        // this.package = packageName;
+        this.nodeAttributes = { 
+            'label': packageName + " " + dep.version,
+            package:packageName,
+            version:dep.version
+        };
         this.op = "OP";
 
 
@@ -82,9 +86,9 @@ export class NodeDefExt implements NodeDef {
     }
 
 
-    version: string;
-    package: string;
-    dev: boolean;
+    // version: string;
+    // package: string;
+    // dev: boolean;
 
     get output(): string[] {
         return this._output.map(x => x.target.name)
@@ -139,7 +143,7 @@ export class PackageLockGraph implements GraphDef {
 
     private linkUnresolved() {
         for (const n of this.node) {
-            let versions = this._nodesByPackageName[n.package];
+            let versions = this._nodesByPackageName[n.nodeAttributes.package];
 
             let resolved: NodeDefExt[] = [];
             let unresolved: NodeDefExt[] = [];
@@ -163,6 +167,7 @@ export class PackageLockGraph implements GraphDef {
 
 
     private linkDependentPackages(parent: NodeDefExt, deps: { [key: string]: PackageLockDependency; }, depth: number) {
+        //if(parent && parent.package=="webpack") return;
         Object.keys(deps).forEach(packageName => {
             let dep = deps[packageName];
             let graphNode = this.getOrCreateNode(packageName, dep);
@@ -170,7 +175,6 @@ export class PackageLockGraph implements GraphDef {
             if (parent) {
                 graphNode.link(parent, false/* dep.dev*/);
             }
-
 
             if (dep.dependencies) {
                 this.linkDependentPackages(graphNode, dep.dependencies, depth + 1);
@@ -183,10 +187,10 @@ export class PackageLockGraph implements GraphDef {
      */
     private _nodesByPackageName: { [key: string]: {} } = {};
     private indexPackageVersion(versioned: NodeDefExt) {
-        if (!this._nodesByPackageName[versioned.package]) {
-            this._nodesByPackageName[versioned.package] = [];
+        if (!this._nodesByPackageName[versioned.nodeAttributes.package]) {
+            this._nodesByPackageName[versioned.nodeAttributes.package] = [];
         }
-        this._nodesByPackageName[versioned.package][versioned.version] = versioned;
+        this._nodesByPackageName[versioned.nodeAttributes.package][versioned.nodeAttributes.version] = versioned;
     }
 
 
@@ -297,7 +301,7 @@ export class PackageLockGraph implements GraphDef {
 
         const SPLIT = /\.|-|#|_/;
         this.node.forEach(x => {
-            const path = x.package.split(SPLIT);//.join("/");
+            const path = x.nodeAttributes.package.split(SPLIT);//.join("/");
 
             let leaf: any = root;
             for (const chunk of path) {
@@ -344,14 +348,14 @@ export class PackageLockGraph implements GraphDef {
             // originalGroups.push(childGroup);
             // let newName = originalGroups.join("/");
             // renamingMap[x.name] = this.escape(newName + "-" + x.version);
-            let newName = x.package;
+            let newName = x.nodeAttributes.package;
             const path: string[] = newName.split(SPLIT);//.join("/");
             let bestDir = findLeaf(path);
             if (bestDir && bestDir.length > 0) {
-                newName = bestDir.join("/") + "/" + x.package;
+                newName = bestDir.join("/") + "/" + x.nodeAttributes.package;
             }
 
-            renamingMap[x.name] = this.escape(newName) + "_" + this.escapeVersion(x.version);
+            renamingMap[x.name] = this.escape(newName) + "_" + this.escapeVersion(x.nodeAttributes.version);
 
         });
         console.log(renamingMap);
