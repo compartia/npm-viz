@@ -173,10 +173,11 @@ export class Minimap {
     // The svg needs to be self contained, i.e. all the style rules need to be
     // embedded so the canvas output matches the origin.
     let stylesText = '';
-    for (let k = 0; k < document.styleSheets.length; k++) {
+    let doc:any=this.svg.parentNode;
+    for (let k = 0; k < doc.styleSheets.length; k++) {
       try {
-        let cssRules = (<any>document.styleSheets[k]).cssRules ||
-          (<any>document.styleSheets[k]).rules;
+        let cssRules = (<any>doc.styleSheets[k]).cssRules ||
+          (<any>doc.styleSheets[k]).rules;
         if (cssRules == null) {
           continue;
         }

@@ -45,11 +45,13 @@ limitations under the License.
   --kt-out-edge-bg-hover: rgba(241, 56, 113, 0.55);
   --kt-in-edge-bg-hover: rgba(67, 151, 206, 0.55);
 }
+ 
 
  #svg {  
   overflow: hidden;  
   height: 100%;
   width: 100%;
+   
 }
 
  #hidden {
@@ -183,13 +185,14 @@ limitations under the License.
   }
 
   .input-edge-highlight.out > path {
-    /* stroke: url("#grad-edge-out") !important; */
-    stroke: rgb(196, 26, 97) !important;
+    stroke: url("#grad-edge-out") !important;
+    /* stroke: rgb(196, 26, 97) !important; */
   }
 
   .input-edge-highlight > path {
-    /* stroke: url("#grad-edge-in") !important; */
-    stroke: rgb(62, 136, 247) !important;
+    stroke: url("#grad-edge-in") !important;
+    /* stroke: rgb(62, 136, 247) !important; */
+    fill: transparent;
   }
 
  .input-highlight > .in-annotations > .annotation > .annotation-edge,
@@ -570,10 +573,10 @@ limitations under the License.
 
 <svg id="svg">
   <defs>
-      <linearGradient id='grad-edge-control'>
-          <stop offset='10%' stop-color='#ccccff' />
-          <stop offset='100%' stop-color='#ffcccc' />
-        </linearGradient>
+    <linearGradient id='grad-edge-control'>
+      <stop offset='10%' stop-color='#ccccff' />
+      <stop offset='100%' stop-color='#ffcccc' />
+    </linearGradient>
 
 
     <linearGradient id='grad-edge-in'>
