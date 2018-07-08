@@ -114,7 +114,7 @@ const PARAMS = {
   /**
    * Whether to extract high degree nodes from the core part of the graph.
    */
-  enableExtraction: true,
+  enableExtraction: false,
   /**
    * The minimum number of nodes for a graph to have in order for high in and
    * out degree nodes to be extracted in auxiliary. The aim here is to prevent
@@ -171,13 +171,13 @@ const PARAMS = {
    * Whether to add bridge nodes and edges to the core when building the
    * subhierarchy of an expanded metanode. See buildSubhierarchy().
    */
-  enableBridgegraph: true,
+  enableBridgegraph: false,
 
   /**
    * 2 colors, for the minimum and maximum value respectively, whenever we
    * have a gradient scale.
    */
-  minMaxColors: ['#fff5f0', '#fb6a4a'],
+  minMaxColors: ['#fff5f0', '#fb4a6a'],
 
   /**
    * Maximum number of annotations to be displayed on a node before an
@@ -209,7 +209,7 @@ export class RenderGraphInfo {
   renderedOpNames: string[];
   deviceColorMap?: d3.ScaleOrdinal<string, string>;
   xlaClusterColorMap?: d3.ScaleOrdinal<string, string>;
-  memoryUsageScale?: d3.ScaleLinear<string, string>;
+  cardinalityScale?: d3.ScaleLinear<string, string>;
   computeTimeScale?: d3.ScaleLinear<string, string>;
   /** Scale for the thickness of edges when there is no shape information. */
   edgeWidthSizedBasedScale?:
@@ -258,17 +258,18 @@ export class RenderGraphInfo {
                 MetanodeColors.XLA_CLUSTER_PALETTE));
 
     let topLevelGraph = this.hierarchy.root.metagraph;
-    // Find the maximum memory usage. Use 0 as the minimum.
-    let maxMemory:any = d3.max(topLevelGraph.nodes(),
-        (nodeName, index) => {
-      let node = topLevelGraph.node(nodeName);
-      // Some ops don't have stats at all.
-      if (node.stats != null) {
-        return node.stats.totalBytes;
-      }
-    });
-    this.memoryUsageScale = d3.scaleLinear<string, string>()
-        .domain([0, maxMemory!])
+    
+    const maxCardinality: any = d3.max(topLevelGraph.nodes(),
+      (nodeName, index) => {
+        let node = topLevelGraph.node(nodeName);
+        // Some ops don't have stats at all.
+        if (node.cardinality != null) {
+          return node.cardinality;
+        }
+      });
+
+    this.cardinalityScale = d3.scaleLinear<string, string>()
+        .domain([0, maxCardinality!])
         .range(PARAMS.minMaxColors);
 
     // Find the maximum compute time. Use 0 as the minimum.
@@ -332,8 +333,10 @@ export class RenderGraphInfo {
     this.index[nodeName] = renderInfo;
     this.renderedOpNames.push(nodeName);
 
-    if (node.stats) {
-      renderInfo.memoryColor = this.memoryUsageScale!(node.stats.totalBytes);
+    renderInfo.cardinalityColor = this.cardinalityScale(node.cardinality);
+
+    if (node.stats) {       
+      
       renderInfo.computeTimeColor =
           this.computeTimeScale!(node.stats.getTotalMicros());
     }
@@ -933,7 +936,7 @@ export class RenderGraphInfo {
         rest.concat([inbound ? 'IN' : 'OUT']).join('~~');
 
     // Build out the bridgegraph.
-    let bridgegraph = this.hierarchy.getBridgegraph(nodeName);
+    // let bridgegraph = this.hierarchy.getBridgegraph(nodeName);
 
     // Look for popular nodes so we can make annotations instead of paths.
     let otherCounts = {
@@ -944,230 +947,25 @@ export class RenderGraphInfo {
       // Counts of all control edges involving other nodes by name.
       control: <{[nodeName: string]: number}> {},
     };
-    _.each(bridgegraph!.edges(), e => {
-      // An edge is inbound if its destination node is in the metagraph.
-      let inbound = !!metagraph.node(e.w);
-      let otherName = inbound ? e.v : e.w;
-      let metaedge = bridgegraph!.edge(e);
-      if (!metaedge.numRegularEdges) {
-        otherCounts.control[otherName] =
-          (otherCounts.control[otherName] || 0) + 1;
-      } else if (inbound) {
-        otherCounts.out[otherName] = (otherCounts.out[otherName] || 0) + 1;
-      } else {
-        otherCounts.in[otherName] = (otherCounts.in[otherName] || 0) + 1;
-      }
-    });
+    
+    // _.each(bridgegraph!.edges(), e => {
+    //   // An edge is inbound if its destination node is in the metagraph.
+    //   let inbound = !!metagraph.node(e.w);
+    //   let otherName = inbound ? e.v : e.w;
+    //   let metaedge = bridgegraph!.edge(e);
+    //   if (!metaedge.numRegularEdges) {
+    //     otherCounts.control[otherName] =
+    //       (otherCounts.control[otherName] || 0) + 1;
+    //   } else if (inbound) {
+    //     otherCounts.out[otherName] = (otherCounts.out[otherName] || 0) + 1;
+    //   } else {
+    //     otherCounts.in[otherName] = (otherCounts.in[otherName] || 0) + 1;
+    //   }
+    // });
 
     // Add annotations and edges for bridgegraph relationships.
     let hierarchyNodeMap = this.hierarchy.getNodeMap();
-    _.each(bridgegraph!.edges(), bridgeEdgeObj => {
-      let bridgeMetaedge = bridgegraph!.edge(bridgeEdgeObj);
-
-      // Determine whether this bridge edge is incoming by checking the
-      // metagraph for a node that matches the destination end.
-      let inbound = !!metagraph.node(bridgeEdgeObj.w);
-
-      // Based on the direction of the edge, one endpoint will be an immediate
-      // child of this renderNodeInfo, and the other endpoint will be a sibling
-      // of the parent (or an ancestor further up).
-      let [childName, otherName] =
-        inbound ?
-          [bridgeEdgeObj.w, bridgeEdgeObj.v] :
-          [bridgeEdgeObj.v, bridgeEdgeObj.w];
-
-      let childRenderInfo = this.index[childName];
-      let otherRenderInfo = this.index[otherName];
-      let otherNode =
-        otherRenderInfo ?
-          otherRenderInfo.node :
-          hierarchyNodeMap[otherName];
-
-      // Determine whether this edge is a control edge between nodes where
-      // either node is high-degree with respect to control edges. This will
-      // be a signal to show it as an annotation instead of a bridge edge.
-      let isHighDegreeControlEdge = !bridgeMetaedge.numRegularEdges &&
-        otherCounts.control[otherName] > PARAMS.maxControlDegree;
-
-      let [, childAnnotations] =
-        inbound ?
-          [renderNodeInfo.inAnnotations, childRenderInfo.inAnnotations] :
-          [renderNodeInfo.outAnnotations, childRenderInfo.outAnnotations];
-
-      // Don't render a bridge path if the other node has in or out degree above
-      // a threshold, lest bridge paths emanating out of a metagraph crowd up,
-      // as was the case for the Fatcat LSTM lstm_1 > lstm_1 metagraph.
-      let otherDegreeCount =
-          (inbound ? otherCounts.out : otherCounts.in)[otherName];
-      let isOtherHighDegree = otherDegreeCount > PARAMS.maxBridgePathDegree;
-
-      // The adjoining render metaedge info from the parent's coreGraph, if any.
-      // It will either be a Metaedge involving this node directly, if it
-      // previously came from a metagraph, or it'll be a Metaedge involving
-      // a previously created bridge node standing in for the other node.
-      let adjoiningMetaedge = null;
-
-      // We can only hope to render a bridge path if:
-      //  - bridgegraph paths are enabled,
-      //  - the other node is not too high-degree,
-      //  - the child is in the core (not extracted for being high-degree), and
-      //  - there's a path (in the traversal sense) between child and other.
-      let canDrawBridgePath = false;
-      if (PARAMS.enableBridgegraph &&
-          !isOtherHighDegree &&
-          !isHighDegreeControlEdge &&
-          childRenderInfo.isInCore()) {
-
-        // Utility function for finding an adjoining metaedge.
-        let findAdjoiningMetaedge = targetName => {
-          let adjoiningEdgeObj: graphlib.EdgeObject =
-            inbound ?
-              { v: targetName, w: nodeName } :
-              { v: nodeName, w: targetName };
-          return <RenderMetaedgeInfo>
-            parentNodeInfo.coreGraph.edge(adjoiningEdgeObj);
-        };
-
-        adjoiningMetaedge = findAdjoiningMetaedge(otherName);
-        if (!adjoiningMetaedge) {
-          adjoiningMetaedge = findAdjoiningMetaedge(
-              getBridgeNodeName(inbound, otherName, parentNode.name));
-        }
-
-        canDrawBridgePath = !!adjoiningMetaedge;
-      }
-
-      // Although dataflow edges are acyclic, control dependency edges may
-      // actually point 'backwards' in the graph. If this bridgeMetaedge is
-      // a control dependency, we need to determine whether it's backwards
-      // pointing so that we render it appropriately.
-      //
-      // For instance, say we're rendering a graph with nodes named A/B and Z/Y,
-      // and we're currently rendering the bridgegraph for A. Further, let's say
-      // that there was an original BaseEdge from A/B->Z/Y and a CONTROL EDGE
-      // from Z/Y=>A/B.
-      //
-      //     +----------------+
-      //     | A              |
-      //     |  +-----+       |         +------+
-      //     |  | B   |>----->|>------->| Z    |
-      //     |  |     |       |         |      |
-      //     |  |     |   *   |         |      |
-      //     |  |     |<=====<|<=======<|      |
-      //     |  +-----+       |         +------+
-      //     +----------------+
-      //
-      // When we render the subhierarchy for Metanode A, we'll come across a
-      // control-only Metaedge in the bridgegraph from Z=>A/B (*). The question
-      // is whether this edge is backwards.
-      //
-      // To answer that question, we follow the chain of adjoining metaedges
-      // until we reach the topmost one. In this case, that's the control-only
-      // Metaedge Z=>A in the ROOT's metagraph. We determine that this edge
-      // is backwards by looking at the topological ordering of ROOT's metagraph
-      // (which ignores control edges) and seeing that Z comes AFTER A.
-      //
-      // The property of being backwards is independent of whether the edge
-      // is inbound or outbound. In the preceding example, if we were building
-      // the subhierarchy for Z, we'd find bridge edge Z/Y=>A, walk to its
-      // topmost adjoining metaedge Z=>A and discover that it's backwards.
-      let backwards = false;
-      if (adjoiningMetaedge && !bridgeMetaedge.numRegularEdges) {
-        // Find the top-most adjoining render metaedge information, and the
-        // GroupNode whose metagraph must contain the associated metaedge.
-        let topAdjoiningMetaedge = adjoiningMetaedge;
-        let topGroupNode = parentNodeInfo.node;
-        while (topAdjoiningMetaedge.adjoiningMetaedge) {
-          topAdjoiningMetaedge = topAdjoiningMetaedge.adjoiningMetaedge;
-          topGroupNode = <GroupNode>topGroupNode.parentNode;
-        }
-
-        // Check against the topological ordering for the top node. The current
-        // bridge metaedge we're evaluating is backwards if its source comes
-        // after its destination.
-        let ordering = this.hierarchy.getTopologicalOrdering(topGroupNode.name);
-        let e = topAdjoiningMetaedge.metaedge;
-        backwards = ordering[e.v] > ordering[e.w]; 
-      }
-
-      // Render backwards control edges as annotations.
-      canDrawBridgePath = canDrawBridgePath && !backwards;
-
-      // If we can't make a bridge path for any reason, then we add an
-      // annotation instead.
-      if (!canDrawBridgePath) {
-        childAnnotations.push(new Annotation(
-            otherNode,
-            otherRenderInfo,
-            new RenderMetaedgeInfo(bridgeMetaedge),
-            AnnotationType.SHORTCUT,
-            inbound));
-        return;
-      }
-
-      // At this point, all conditions have been met for drawing a bridge path.
-
-      // Find or create the IN/OUT node representing otherNode.
-      let bridgeContainerName = getBridgeNodeName(inbound, nodeName);
-      let bridgeNodeName = getBridgeNodeName(inbound, otherName, nodeName);
-      let bridgeNodeRenderInfo = coreGraph.node(bridgeNodeName);
-      if (!bridgeNodeRenderInfo) {
-
-        // Find or create the directional container for the bridge node.
-        let bridgeContainerInfo = coreGraph.node(bridgeContainerName);
-        if (!bridgeContainerInfo) {
-          let bridgeContainerNode: BridgeNode = {
-            // Important node properties.
-            name: bridgeContainerName,
-            type: NodeType.BRIDGE,
-            // Unused node properties.
-            isGroupNode: false,
-            cardinality: 0,
-            parentNode: null,
-            stats: null,
-            include: InclusionType.UNSPECIFIED,
-            // BridgeNode properties.
-            inbound: inbound,
-            nodeAttributes: {},
-          };
-          bridgeContainerInfo =
-            new RenderNodeInfo(bridgeContainerNode);
-          this.index[bridgeContainerName] = bridgeContainerInfo;
-          coreGraph.setNode(bridgeContainerName, bridgeContainerInfo);
-        }
-
-        let bridgeNode: BridgeNode = {
-          // Important node properties.
-          name: bridgeNodeName,
-          type: NodeType.BRIDGE,
-          // Unimportant node properties.
-          isGroupNode: false,
-          cardinality: 1,
-          parentNode: null,
-          stats: null,
-          include: InclusionType.UNSPECIFIED,
-          // BridgeNode properties.
-          inbound: inbound,
-          nodeAttributes: {},
-        };
-        bridgeNodeRenderInfo = new RenderNodeInfo(bridgeNode);
-        this.index[bridgeNodeName] = bridgeNodeRenderInfo;
-        coreGraph.setNode(bridgeNodeName, bridgeNodeRenderInfo);
-
-        // Set bridgeNode to be a graphlib child of the container node.
-        coreGraph.setParent(bridgeNodeName, bridgeContainerName);
-        bridgeContainerInfo.node.cardinality++;
-      }
-
-      // Create and add a bridge render metaedge.
-      let bridgeRenderMetaedge =
-        new RenderMetaedgeInfo(bridgeMetaedge);
-      bridgeRenderMetaedge.adjoiningMetaedge = adjoiningMetaedge;
-      inbound ?
-        coreGraph.setEdge(bridgeNodeName, childName, bridgeRenderMetaedge) :
-        coreGraph.setEdge(childName, bridgeNodeName, bridgeRenderMetaedge);
-
-    }); // End _.each(bridgegraph.edges).
+ 
 
     // For each bridge container (IN and/or OUT), add structural edges between
     // terminal nodes and that container. A terminal node is one which has no
@@ -1592,10 +1390,8 @@ export class RenderNodeInfo {
    */
   xlaClusterColor: string;
 
-  /**
-   * Color according to the memory usage of this node.
-   */
-  memoryColor: string;
+
+  cardinalityColor: string;
 
   /**
    * Color according to the compute time of this node.

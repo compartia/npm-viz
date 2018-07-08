@@ -156,6 +156,8 @@ export interface OpNode extends Node {
   device: string;
   // attr: {key: string, value: any}[];
   inputs: NormalizedInput[];
+  outputs: NormalizedInput[];
+  
   inEmbeddings: OpNode[];
   outEmbeddings: OpNode[];
   // The name of the SeriesNode that can contain this node in its series.
@@ -389,6 +391,8 @@ export class OpNodeImpl implements OpNode {
   stats: NodeStats;
    
   inputs: NormalizedInput[];
+  outputs: NormalizedInput[];
+
   type: NodeType;
   isGroupNode: boolean;
   cardinality: number;
@@ -425,6 +429,8 @@ export class OpNodeImpl implements OpNode {
     // source node, whether it has a number part and whether it is a
     // control dependency.
     this.inputs = normalizeInputs(rawNode.input);
+    this.outputs = normalizeInputs(rawNode.output);
+
     this.outputShapes = extractOutputShapes(rawNode.nodeAttributes);
     this.xlaCluster = extractXlaCluster(rawNode.nodeAttributes);
     this.compatible = false;
@@ -474,20 +480,7 @@ export function joinStatsInfoWithGraph(
 
       // Compute the total bytes used.
       let totalBytes = 0;
-      if (nodeStats.memory) {
-        _.each(nodeStats.memory, alloc => {
-        if (alloc.total_bytes) {
-            if (alloc.total_bytes > 0) {
-              totalBytes += Number(alloc.total_bytes);
-            } else {
-              /* tslint:disable */
-              console.log(
-                  'ignoring negative memory allocation for ' + nodeName);
-              /* tslint:enable */
-            }
-          }
-        });
-      }
+       
       let outputSize: number[][] = null;
       if (nodeStats.output) {
         outputSize = _.map(nodeStats.output, output => {

@@ -12,6 +12,8 @@ import * as util from '../tf_graph_common/util';
 import './tf-graph-minimap';
 
 import './tf-graph-loader.html';
+import { json } from 'd3';
+import { PackageLockGraph } from '../npmjson';
 
 
 
@@ -57,6 +59,9 @@ export class GraphScene extends Polymer.Element {
     @property({ type: Object, notify: true, readOnly: true })
     outHierarchyParams: any;
 
+    @property({ type: Object})
+    jsonLoaded: any;
+
     /** @type {Object} */
     @property({ type: Object, notify: true, readOnly: true })
     outStats: any;
@@ -64,21 +69,27 @@ export class GraphScene extends Polymer.Element {
 
     static get observers() {
         return [
-            '_selectedDatasetChanged(selectedDataset, datasets, overridingHierarchyParams)',
-            '_selectedFileChanged(selectedFile, overridingHierarchyParams)',
+            '_selectedDatasetChanged(jsonLoaded, overridingHierarchyParams)',
             '_readAndParseMetadata(selectedMetadataTag, overridingHierarchyParams)',
         ]
     };
 
 
-    private _selectedDatasetChanged(datasetIndex, datasets, overridingHierarchyParams) {
-        this._parseAndConstructHierarchicalGraph(
-            datasets[datasetIndex].path, undefined, overridingHierarchyParams);
+    private _selectedDatasetChanged(jsonLoaded, overridingHierarchyParams) {
+        this._parseAndConstructHierarchicalGraph(jsonLoaded, overridingHierarchyParams);
     };
 
-    private loadGraphData(tracker: ProgressTracker): Promise<GraphDef> {
-        return new Promise<GraphDef>(function (resolve, reject) {
+    private loadGraphData(json:any, tracker: ProgressTracker): Promise<GraphDef> {
 
+        if(!json){
+            return Promise.resolve(<GraphDef>{node: []});
+        }
+
+        return new Promise<GraphDef>(function (resolve, reject) {
+            console.error(json.name);
+
+            let plg= new PackageLockGraph(json);
+            
             let g: GraphDef = {
                 node: [],
                 // Compatibility versions of the graph.
@@ -86,6 +97,9 @@ export class GraphScene extends Polymer.Element {
                 // Contains a library of functions that may composed through the graph.
                 library: { function: [] }
             };
+
+
+
 
             let prevNode:NodeDef = null;
 
@@ -129,14 +143,17 @@ export class GraphScene extends Polymer.Element {
             }
 
 
-            resolve(g);
+            resolve(plg);
 
 
         });
     }
 
-    private _parseAndConstructHierarchicalGraph(
-        path, pbTxtFile, overridingHierarchyParams) {
+    public onFileLoaded(file:any){
+        console.log(file);
+    }
+
+    private _parseAndConstructHierarchicalGraph(jsonLoaded, overridingHierarchyParams) {
         // Reset the progress bar to 0.
         this.set('progress', {
             value: 0,
@@ -165,7 +182,7 @@ export class GraphScene extends Polymer.Element {
 
         var dataTracker = util.getSubtaskTracker(tracker, 30, 'Data');
         // tf.graph.parser.fetchAndParseGraphData(path, pbTxtFile, dataTracker)
-        this.loadGraphData(dataTracker)
+        this.loadGraphData(jsonLoaded, dataTracker)
             .then((graph) => {
                 if (!graph.node) {
                     throw 'The graph is empty. Make sure that the graph is passed to the ' +
@@ -229,22 +246,6 @@ export class GraphScene extends Polymer.Element {
     };
 
 
-    private _selectedFileChanged(e, overridingHierarchyParams) {
-        if (!e) {
-            return;
-        }
-        var file = e.target.files[0];
-        if (!file) {
-            return;
-        }
-
-        // Clear out the value of the file chooser. This ensures that if the user
-        // selects the same file, we'll re-read it.
-        e.target.value = '';
-
-        this._parseAndConstructHierarchicalGraph(
-            null, file, overridingHierarchyParams);
-    }
 
     private _readAndParseMetadata(metadataIndex) {
         this.set('outStats', null);

@@ -514,7 +514,8 @@ export class GraphScene extends Polymer.Element {
             this._updateNodeState(oldSelectedNode);
         }
 
-        node.traceInputs(_svg, this.renderHierarchy);
+        setTimeout(()=>
+            node.traceInputs(_svg, this.renderHierarchy), 200);
 
         if (!selectedNode) {
             return;

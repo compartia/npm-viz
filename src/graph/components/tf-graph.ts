@@ -3,6 +3,7 @@ import "polymer/polymer.html";
 import { customElement, property } from 'taktik-polymer-typescript';
 import './tf-graph.html'
 import './tf-graph-scene'
+import '../../components/package-info'
 
 import * as render from '../tf_graph_common/render';
 import * as graph from '../tf_graph_common/graph';
@@ -211,7 +212,7 @@ export class TfGraphElement extends Polymer.Element {
 
       (this as any)._setColorByParams({
         compute_time: getColorParamsFromScale(renderGraph.computeTimeScale),
-        memory: getColorParamsFromScale(renderGraph.memoryUsageScale),
+        cardinality: getColorParamsFromScale(renderGraph.cardinalityScale),
         device: _.map(renderGraph.deviceColorMap.domain(),
             function(deviceName) {
           return {

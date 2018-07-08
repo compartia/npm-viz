@@ -119,7 +119,7 @@ export const PARAMS = {
     op: {
       width: 70,
       height: 6,
-      radius: 3,  // for making annotation touching ellipse
+      radius: 0,//3,  // for making annotation touching ellipse
       labelOffset: -8,
       maxLabelWidth: 60
     },
@@ -156,7 +156,7 @@ export const PARAMS = {
       // their edges.
       width: 20,
       height: 20,
-      radius: 2,
+      radius: 0,//2,
       labelOffset: 0
     }
   },
