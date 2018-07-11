@@ -212,7 +212,7 @@ limitations under the License.
  *            provided node.
  */
 export function panToNode(nodeName: String, svg:any, zoomG:any, d3zoom:any): boolean {
-  let node = <SVGAElement>d3
+  let node =  d3.select(svg)
                  .select('[data-name="' + nodeName + '"].' + Class.Node.GROUP)
                  .node();
   if (!node) {
@@ -221,8 +221,8 @@ export function panToNode(nodeName: String, svg:any, zoomG:any, d3zoom:any): boo
 
   // Check if the selected node is off-screen in either
   // X or Y dimension in either direction.
-  let nodeBox = node.getBBox();
-  let nodeCtm = node.getScreenCTM();
+  let nodeBox = (node as any).getBBox();
+  let nodeCtm = (node as any).getScreenCTM();
   let pointTL = svg.createSVGPoint();
   let pointBR = svg.createSVGPoint();
   pointTL.x = nodeBox.x;

@@ -764,7 +764,6 @@ export function getStrokeForFill(fill: string) {
  * @param renderGraphInfo Information on the rendered state of the graph.
  */
 export function traceInputs(_svg:any,renderGraphInfo: render.RenderGraphInfo) {
-  console.error("traceInputs"+_svg);
   if (renderGraphInfo) {
     _resetStyles(_svg, renderGraphInfo);
     _traceInputs(_svg, renderGraphInfo);

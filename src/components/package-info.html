@@ -1,5 +1,4 @@
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
-
 <link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
 
 <dom-module id="package-info">
@@ -11,6 +10,14 @@
                 padding: 3px;
                 margin: 3px;
                 display: inline-block;
+            }
+
+            .dependenciy {
+                border-bottom: 1px solid #eeeeee;
+
+                padding: 3px;
+                margin: 3px;
+                display: block;
             }
         </style>
         <!-- <iron-request id="apiRequest"></iron-request> -->
@@ -32,8 +39,37 @@
                 <!-- <template is="dom-repeat" items="[[jsonLoaded.dependencies]]">
                                     <div class="keyword">[[item]]</div>
                                 </template> -->
+
+                <h3>Dependencies:</h3>
+                <template is="dom-repeat" items="[[outputs]]">
+                    <!-- <div class="dependenciy">
+                        <span>[[item.nodeAttributes.package]]</span>
+                        <span>[[item.nodeAttributes.version]]</span>
+                    </div> -->
+                    <dependency-link item="[[item]]"></dependency-link>
+                </template>
+                <h3>Is a dependendency of: </h3>
+                <template is="dom-repeat" items="[[inputs]]">
+                    <!-- <div class="dependenciy" on-tap="dependenciyClicked">
+                        <span>[[item.nodeAttributes.package]]</span>
+                        <span>[[item.nodeAttributes.version]]</span>
+                    </div> -->
+                    <dependency-link item="[[item]]"></dependency-link>
+                </template>
             </div>
         </template>
 
+    </template>
+</dom-module>
+
+
+<dom-module id="dependency-link">
+    <template>
+        <div class="dependenciy" on-mouseover="_nodeListener"
+        on-mouseout="_nodeListener"
+        on-click="_nodeListener">
+            <span>[[item.nodeAttributes.package]]</span>
+            <span>[[item.nodeAttributes.version]]</span>
+        </div>
     </template>
 </dom-module>

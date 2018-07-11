@@ -89,10 +89,12 @@
                 health-pill-step-index="{{healthPillStepIndex}}"
                 handle-edge-selected="[[handleEdgeSelected]]"></graph-scene>
           </div>
-          <div class="splitter-content-right"><package-info 
-            selected-node="{{selectedNode}}"
-            graph-hierarchy="{{graphHierarchy}}" 
-            ></package-info></div>
+          <div class="splitter-content-right">
+            <package-info 
+              selected-node="{{selectedNode}}"
+              highlighted-node="{{highlightedNode}}"
+              graph-hierarchy="{{graphHierarchy}}"></package-info>
+          </div>
         </vaadin-split-layout>
       </div>
     </div>
