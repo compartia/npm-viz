@@ -12,7 +12,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.graph.template {
+import * as _ from 'lodash';
+import * as graph from './graph';
+import { Metaedge, Metanode, NodeType, OpNode, SeriesNode } from './graph';
+import { Hierarchy } from './hierarchy';
 
 /**
  * Detect repeating patterns of subgraphs.
@@ -23,7 +26,7 @@ module tf.graph.template {
  * @param verifyTemplate whether to run the template verification algorithm
  * @return a dict (template id => Array of node names)
  */
-export function detect(h, verifyTemplate): {[templateId: string]: string[]} {
+export function detect(h:any, verifyTemplate:any): {[templateId: string]: string[]} {
   // In any particular subgraph, there are either
   // - leaf nodes (which do not have subgraph)
   // - metanode nodes - some of them have only one member (singular metanode)
@@ -40,14 +43,14 @@ export function detect(h, verifyTemplate): {[templateId: string]: string[]} {
   // as this leads to optimal setting of the colors of each template for
   // maximum differentiation.
   return <{[templateId: string]: string[]}>_(templates)
-      .pairs()
-      .sortBy(function(pair: {level: number, nodes: string[]}[]) {
+      .toPairs()
+      .sortBy(function(pair: any[]) {
         return pair[1].level;
       })
-      .map(function(pair: {level: number, nodes: string[]}[]) {
+      .map(function(pair: any) {
         return [pair[0], pair[1].nodes];
       })
-      .object()
+      .fromPairs()
       .value();
 };
 
@@ -55,7 +58,7 @@ export function detect(h, verifyTemplate): {[templateId: string]: string[]} {
  * @return Unique string for a metanode based on depth, |V|, |E| and
  * op type histogram.
  */
-function getSignature(metanode) {
+function getSignature(metanode:Metanode) {
   // depth=<number> |V|=<number> |E|=<number>
   let props = _.map(
                    {
@@ -63,17 +66,19 @@ function getSignature(metanode) {
                      '|V|': metanode.metagraph.nodes().length,
                      '|E|': metanode.metagraph.edges().length
                    },
-                   function(v, k) { return k + '=' + v; })
+                   function(v:any, k:any) { return k + '=' + v; })
                   .join(' ');
 
   // optype1=count1,optype2=count2
-  let ops = _.map(metanode.opHistogram, function(count, op) {
+  let ops = _.map(metanode.opHistogram, function(count:any, op:any) {
                return op + '=' + count;
              }).join(',');
 
   return props + ' [ops] ' + ops;
 }
 
+
+interface TemplateInfo {nodes: Array<graph.OpNode|graph.GroupNode>, level: number};
 /**
  * Generate a nearest neighbor hash of metanodes
  * based on depth, |V|, |E|, and opHistogram of their subgraph
@@ -83,28 +88,28 @@ function getSignature(metanode) {
  *   Object with min level of the template and an Array of tf.graph.Group]
  *   sort by ascending order of minimum depth at which metanode appears.
  */
-function clusterSimilarSubgraphs(h: hierarchy.Hierarchy) {
+function clusterSimilarSubgraphs(h: Hierarchy) {
+  
   /** a dict from metanode.signature() => Array of tf.graph.Groups */
-  let hashDict = _(h.getNodeMap()).reduce(
-      (hash, node: OpNode|Metanode, name) => {
-    if (node.type !== NodeType.META) {
+  let hashDict:{[key:string]:TemplateInfo} = _(h.getNodeMap()).reduce(
+    (hash: any, node: any, name: string) => {
+      if (node.type !== NodeType.META) {
         return hash;
-    }
-    let levelOfMetaNode = name.split('/').length - 1;
-    let signature = getSignature(node);
-    let templateInfo = hash[signature] ||
-      {nodes: [], level: levelOfMetaNode};
-    hash[signature] = templateInfo;
-    templateInfo.nodes.push(node);
-    if (templateInfo.level > levelOfMetaNode) {
-      templateInfo.level = levelOfMetaNode;
-    }
-    return hash;
-  }, {});
+      }
+      let levelOfMetaNode = name.split('/').length - 1;
+      let signature:string = getSignature(node);
+      let templateInfo: TemplateInfo = hash[signature] || { nodes: [], level: levelOfMetaNode };
+      hash[signature] = templateInfo;
+      templateInfo.nodes.push(node);
+      if (templateInfo.level > levelOfMetaNode) {
+        templateInfo.level = levelOfMetaNode;
+      }
+      return hash;
+    }, {});
 
   return _(hashDict)
-      .pairs()
-      .filter(function(pair: {level: number, nodes: (OpNode|Metanode)[]}) {
+      .toPairs()
+      .filter(function(pair) {
         const nodes = pair[1].nodes;
         if (nodes.length > 1) {
           // There is more than 1 node with this template. It is worth assigning
@@ -119,7 +124,7 @@ function clusterSimilarSubgraphs(h: hierarchy.Hierarchy) {
         return node.type === NodeType.META &&
             (node as Metanode).associatedFunction;
       })
-      .sortBy(function(pair: {level: number, nodes: (OpNode|Metanode)[]}) {
+      .sortBy(function(pair:any) {
         // sort by depth
         // (all members in the same nnGroup has equal depth)
         return pair[1].nodes[0].depth;
@@ -127,16 +132,16 @@ function clusterSimilarSubgraphs(h: hierarchy.Hierarchy) {
       .value();
 }
 
-function groupTemplateAndAssignId(nnGroups, verifyTemplate) {
+function groupTemplateAndAssignId(nnGroups:any, verifyTemplate:boolean) {
   // For each metanode, compare its subgraph (starting from shallower groups)
   // and assign template id.
   let result: {[templateId: string]: {level: number, nodes: string[]}} = {};
-  return _.reduce(nnGroups, function(templates, nnGroupPair) {
+  return _.reduce(nnGroups, function(templates:any, nnGroupPair:any) {
     let signature = nnGroupPair[0],
       nnGroup = nnGroupPair[1].nodes,
-      clusters = [];
+      clusters:any[] = [];
 
-    nnGroup.forEach(function(metanode) {
+    nnGroup.forEach(function(metanode:Metanode) {
       // check with each existing cluster
       for (let i = 0; i < clusters.length; i++) {
         let similar = !verifyTemplate ||
@@ -172,32 +177,32 @@ function groupTemplateAndAssignId(nnGroups, verifyTemplate) {
 
 function sortNodes(names: string[],
     graph: graphlib.Graph<Metanode|OpNode, Metaedge>, prefix: string) {
-  return _.sortByAll(names,
-    function(name) {
+  return _.sortBy(names,
+    function(name:string) {
       let node = graph.node(name);
       return (<OpNode>node).op;
     },
-    function(name) {
+    function(name:string) {
       let node = graph.node(name);
       return (<Metanode>node).templateId;
     },
-    function(name) {
+    function(name:string) {
       return graph.neighbors(name).length;
     },
-    function(name) {
+    function(name:string) {
       return graph.predecessors(name).length;
     },
-    function(name) {
+    function(name:string) {
       return graph.successors(name).length;
     },
-    function(name) {
+    function(name:string) {
       return name.substr(prefix.length);
     });
 }
 
 function isSimilarSubgraph(g1: graphlib.Graph<any, any>,
     g2: graphlib.Graph<any, any>) {
-  if (!tf.graph.hasSimilarDegreeSequence(g1, g2)) {
+  if (!graph.hasSimilarDegreeSequence(g1, g2)) {
       return false;
   }
 
@@ -205,18 +210,18 @@ function isSimilarSubgraph(g1: graphlib.Graph<any, any>,
   // return true;
 
   // Verify sequence by running DFS
-  let g1prefix = g1.graph().name;
-  let g2prefix = g2.graph().name;
+  let g1prefix = g1.graph().name || "undefined";
+  let g2prefix = g2.graph().name || "undefined";
 
-  let visited1 = {};
-  let visited2 = {};
-  let stack = [];
+  let visited1:{ [key:string]:any } ={};
+  let visited2:{ [key:string]:any } = {};
+  let stack:any[] = [];
 
   /**
    * push sources or successors into the stack
    * if the visiting pattern has been similar.
    */
-  function stackPushIfNotDifferent(n1, n2) {
+  function stackPushIfNotDifferent(n1:any, n2:any) {
     let sub1 = n1.substr(g1prefix.length),
       sub2 = n2.substr(g2prefix.length);
 
@@ -295,7 +300,7 @@ function isSimilarNode(n1: OpNode|Metanode|SeriesNode,
     // compare metanode
     let metanode1 = <Metanode> n1;
     let metanode2 = <Metanode> n2;
-    return metanode1.templateId && metanode2.templateId &&
+    return !!metanode1.templateId && !!metanode2.templateId &&
         metanode1.templateId === metanode2.templateId;
   } else if (n1.type === NodeType.OP && n2.type === NodeType.OP) {
     // compare leaf node
@@ -312,5 +317,4 @@ function isSimilarNode(n1: OpNode|Metanode|SeriesNode,
           (<OpNode>sn2.metagraph.node(sn2.metagraph.nodes()[0])).op)));
   }
   return false;
-}
 }
