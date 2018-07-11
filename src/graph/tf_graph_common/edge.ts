@@ -173,19 +173,7 @@ export function buildGroup(sceneGroup : any,
  */
 export function getLabelForBaseEdge(
     baseEdge: BaseEdge, renderInfo: render.RenderGraphInfo): string | null {
-  let node = <OpNode>renderInfo.getNodeByName(baseEdge.v);
-  if (node.outputShapes == null || _.isEmpty(node.outputShapes)) {
-    return null;
-  }
-  let shape = node.outputShapes[baseEdge.outputTensorKey];
-  if (shape == null) {
-    return null;
-  }
-  if (shape.length === 0) {
-    return 'scalar';
-  }
-  return shape.map(size => { return size === -1 ? '?' : size; })
-      .join(TENSOR_SHAPE_DELIM);
+   return null;
 }
 
 /**
