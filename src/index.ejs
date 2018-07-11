@@ -1,13 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <title>NPM dependency graph</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body{
+        :root {
+            --padding: 10px;
+            --separator-color: rgba(3, 4, 5, 0.1);
+            --accent-color: salmon;
+            --font-size-l: 14px;
+        }         
+
+        body {
             padding: 0;
-            margin: 0;            
+            margin: 0;
         }
     </style>
 </head>
@@ -21,7 +29,7 @@
 -->
 
 <script>
-    (function() {
+    (function () {
         document.addEventListener('WebComponentsReady', function componentsReady() {
             document.removeEventListener('WebComponentsReady', componentsReady, false);
             var script = document.createElement('script');
@@ -41,4 +49,5 @@
 -->
 <npm-deps-graph></npm-deps-graph>
 </body>
+
 </html>

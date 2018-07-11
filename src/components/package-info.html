@@ -5,7 +5,7 @@
     <template>
         <style>
             .keyword {
-                border: 1px solid salmon;
+                border: 1px solid var(--separator-color);
                 border-radius: 3px;
                 padding: 3px;
                 margin: 3px;
@@ -13,11 +13,30 @@
             }
 
             .dependenciy {
-                border-bottom: 1px solid #eeeeee;
+                border-bottom: 1px solid var(--separator-color);
 
                 padding: 3px;
                 margin: 3px;
                 display: block;
+            }
+
+            .panel-settings {
+                --paper-expansion-panel-header: {
+                    font-size: var(--font-size-l);
+                    background: #fefeff;
+                    text-transform: uppercase;
+                    padding-left: var(--padding);
+                    border-bottom: 1px solid var(--separator-color);
+                }
+                
+
+                --paper-expansion-panel-content: {
+                    padding: 0 var(--padding);
+                }                
+            }
+
+            section{
+                padding: var(--padding);
             }
         </style>
         <!-- <iron-request id="apiRequest"></iron-request> -->
@@ -27,10 +46,11 @@
 
         <template is="dom-if" if="[[jsonLoaded]]">
 
-            <div>
-                [[selectedNode.name]] Package: [[package.nodeAttributes.package]]/[[package.version]]
-                <br> [[jsonLoaded.name]] [[jsonLoaded.version]]
-                <br>
+
+            <section class="padding">
+                <!-- [[selectedNode.name]] Package: [[package.nodeAttributes.package]]/[[package.version]] -->
+                <h2> [[jsonLoaded.name]] [[jsonLoaded.version]]</h2>
+
                 <!-- [[jsonLoaded.keywords]] -->
                 <template is="dom-repeat" items="[[jsonLoaded.keywords]]">
                     <div class="keyword">[[item]]</div>
@@ -39,24 +59,21 @@
                 <!-- <template is="dom-repeat" items="[[jsonLoaded.dependencies]]">
                                     <div class="keyword">[[item]]</div>
                                 </template> -->
+            </section>
 
-                <h3>Dependencies:</h3>
+            <paper-expansion-panel class="panel-settings" header="Dependencies ([[outputs.length]])">
                 <template is="dom-repeat" items="[[outputs]]">
-                    <!-- <div class="dependenciy">
-                        <span>[[item.nodeAttributes.package]]</span>
-                        <span>[[item.nodeAttributes.version]]</span>
-                    </div> -->
                     <dependency-link item="[[item]]"></dependency-link>
                 </template>
-                <h3>Is a dependendency of: </h3>
+            </paper-expansion-panel>
+
+            <paper-expansion-panel class="panel-settings" header="Is a dependendency of ([[inputs.length]])">
                 <template is="dom-repeat" items="[[inputs]]">
-                    <!-- <div class="dependenciy" on-tap="dependenciyClicked">
-                        <span>[[item.nodeAttributes.package]]</span>
-                        <span>[[item.nodeAttributes.version]]</span>
-                    </div> -->
                     <dependency-link item="[[item]]"></dependency-link>
                 </template>
-            </div>
+            </paper-expansion-panel>
+
+ 
         </template>
 
     </template>
@@ -65,9 +82,7 @@
 
 <dom-module id="dependency-link">
     <template>
-        <div class="dependenciy" on-mouseover="_nodeListener"
-        on-mouseout="_nodeListener"
-        on-click="_nodeListener">
+        <div class="dependenciy" on-mouseover="_nodeListener" on-mouseout="_nodeListener" on-click="_nodeListener">
             <span>[[item.nodeAttributes.package]]</span>
             <span>[[item.nodeAttributes.version]]</span>
         </div>
