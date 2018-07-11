@@ -42,15 +42,16 @@
         overflow: hidden;
         margin: 0;
         padding: 0;
-        width: 70%;
+        width: 80%;
       }
 
       .splitter-content-right{
+        width: 20%;
         overflow: auto;
         margin: 0;
         padding: 0;
         min-width: 15px;
-        background: hsl(250, 20%, 98%);
+        background: var(--color-bg-secondary);
       }
 
       h2 {
@@ -99,7 +100,7 @@
                 highlighted-node="[[_getVisible(highlightedNode)]]"
                 selected-node="{{selectedNode}}"
                 selected-edge="{{selectedEdge}}"
-                color-by="CARDINALITY"
+                color-by="[[_colorBy]]"
                 progress="[[progress]]"
                 node-context-menu-items="[[nodeContextMenuItems]]"
                 node-names-to-health-pills="[[nodeNamesToHealthPills]]"
@@ -110,9 +111,7 @@
             
             <!-- <button id="button" on-click="toggle">settings</button> -->
             
-            <paper-expansion-panel class="panel-settings" header="Settings" summary="Graph settings">
-                Drop down
-            </paper-expansion-panel>
+            <view-settings selected-color-by="{{_colorBy}}"></view-settings>
 
             <package-info 
               selected-node="{{selectedNode}}"

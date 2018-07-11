@@ -28,14 +28,14 @@
                     padding-left: var(--padding);
                     border-bottom: 1px solid var(--separator-color);
                 }
-                
+
 
                 --paper-expansion-panel-content: {
                     padding: 0 var(--padding);
-                }                
+                }
             }
 
-            section{
+            section {
                 padding: var(--padding);
             }
         </style>
@@ -73,7 +73,7 @@
                 </template>
             </paper-expansion-panel>
 
- 
+
         </template>
 
     </template>
@@ -82,9 +82,36 @@
 
 <dom-module id="dependency-link">
     <template>
-        <div class="dependenciy" on-mouseover="_nodeListener" on-mouseout="_nodeListener" on-click="_nodeListener">
-            <span>[[item.nodeAttributes.package]]</span>
-            <span>[[item.nodeAttributes.version]]</span>
+        <style>
+            .line {
+                @apply --layout-horizontal;
+                @apply --layout-center-justified;
+                padding: calc( var(--padding) / 3);
+                cursor: pointer;
+            }
+
+            .line:hover {
+                background: var(--color-hover)
+            }
+
+
+            .version,
+            .name {
+                font-family: monospace;
+            }
+
+            .name {
+                @apply --layout-flex;
+            }
+
+            .version {
+                color: var(--color-accent);
+                text-align: right;
+            }
+        </style>
+        <div class="dependenciy line" on-mouseover="_nodeListener" on-mouseout="_nodeListener" on-click="_nodeListener">
+            <span class="name">[[item.nodeAttributes.package]]</span>&nbsp;
+            <span class="version">[[item.nodeAttributes.version]]</span>
         </div>
     </template>
 </dom-module>
