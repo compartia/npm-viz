@@ -5,7 +5,6 @@ import './package-info.html';
 import { Hierarchy } from "../graph/tf_graph_common/hierarchy";
 import * as Graph from "../graph/tf_graph_common/graph";
 import * as _ from 'lodash';
-import { NodeDef } from "../graph/tf_graph_common/proto";
 
 
 @customElement('dependency-link')
@@ -15,16 +14,13 @@ export class DependencyLink extends Polymer.Element {
 
 
     private _nodeListener(event) {
-        // fire node.click/mouseover/mouseout
         this.fire('node-list-item-' + event.type, {
             cardNode: this.item.name,
             nodeName: this.item.name,
-            // type: this.itemType
         });
     }
 
     public fire(eventName: string, value?: any): void {
-        // console.log("firing "+eventName);
         window.dispatchEvent(new CustomEvent(eventName, { bubbles: true, detail: value }));
     }
 }
@@ -105,12 +101,6 @@ export class PackageInfo extends Polymer.Element {
     public ready() {
         super.ready();
 
-        // Object.keys(PackageInfo.listeners).forEach(key=>{
-        //     let listener = (e) => {
-        //         console.error(e);
-        //         this[key](e);
-        //       }
-        // });
 
         _.toPairs(PackageInfo.listeners).forEach(pair => {
             let listener = (e) => {
@@ -123,9 +113,4 @@ export class PackageInfo extends Polymer.Element {
     }
 
 
-    // private getNodes(names:string):NodeDef[]{
-    //     for(let n of names){
-    //         this.graphHierarchy.node(n)
-    //     }
-    // }
 }
