@@ -1,7 +1,5 @@
 import { GraphDef, FunctionDefLibraryDef, VersionDef, NodeDef } from "./tf_graph_common/proto";
 
-import * as _ from 'lodash';
-import * as chunks from './chunks';
 
 export interface PackageLockDependency {
     version: string;
@@ -74,10 +72,10 @@ export class NodeDefExt implements NodeDef {
 
         // this.version = dep.version;
         // this.package = packageName;
-        this.nodeAttributes = { 
+        this.nodeAttributes = {
             'label': packageName + " " + dep.version,
-            package:packageName,
-            version:dep.version
+            package: packageName,
+            version: dep.version
         };
         this.op = "OP";
 
@@ -103,8 +101,8 @@ export class NodeDefExt implements NodeDef {
 
     public link(other: NodeDefExt, control: boolean) {
         // let contains =false;
-        for(const l of this._input){
-            if(l.target===other){
+        for (const l of this._input) {
+            if (l.target === other) {
                 return l;
             }
         }
@@ -259,40 +257,6 @@ export class PackageLockGraph implements GraphDef {
 
 
 
-
-    // private buildSemanticStats(): { [key: string]: number } {
-    //     /**
-    //      * making groups
-    //      */
-    //     let stats = {};
-    //     this.node.forEach(x => {
-    //         let words = chunks.allSplits(x.package, '.-_ /@$');
-    //         chunks.countWords(words, stats);
-    //     })
-
-    //     let pairszFiltered = _.toPairs(stats).filter(x => x[1] > 2 && x[0].length > 1);
-    //     stats = _.fromPairs(pairszFiltered);
-    //     console.log(stats);
-    //     return stats;
-    // }
-
-    // private findBestGroup(groups: { [key: string]: number }, childGroup: string, delim: string): string | null {
-    //     let splits = chunks.allSplits(childGroup, delim);
-    //     splits.push(childGroup);
-    //     let best = null;
-    //     let max = 0;
-    //     for (const ch of splits) {
-    //         if (groups[ch]) {
-    //             let val = ch.length * groups[ch];
-    //             if (val > max) {
-    //                 max = val;
-    //                 best = ch;
-    //             }
-    //         }
-    //     }
-    //     return best;
-    // }
-
     private renameNodes(): void {
         const renamingMap: { [key: string]: string; } = {};
         // const groups = this.buildSemanticStats();
@@ -334,20 +298,9 @@ export class PackageLockGraph implements GraphDef {
             return joined;
         }
 
-        // let _nodec=0;
+
         this.node.forEach(x => {
-            // _nodec++;
-            // let group="Group-"+x.package[0].toUpperCase();
-            // let originalGroups = x.package.split("/");
-            // let childGroup = originalGroups.pop();
-            // let additionalGroup =  this.findBestGroup(groups, childGroup, ".-_");
-            // if (additionalGroup) {
-            //     originalGroups.push(additionalGroup);
-            //     // originalGroups= [additionalGroup].concat(originalGroups);
-            // }
-            // originalGroups.push(childGroup);
-            // let newName = originalGroups.join("/");
-            // renamingMap[x.name] = this.escape(newName + "-" + x.version);
+
             let newName = x.nodeAttributes.package;
             const path: string[] = newName.split(SPLIT);//.join("/");
             let bestDir = findLeaf(path);
