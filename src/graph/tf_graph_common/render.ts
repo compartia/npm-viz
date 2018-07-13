@@ -486,8 +486,7 @@ export class RenderGraphInfo {
  
     // Update various properties.
     newOpNode.cardinality = node.cardinality;
-    newOpNode.include = node.include;
-    newOpNode.outputShapes = _.cloneDeep(node.outputShapes);
+    newOpNode.include = node.include;    
     newOpNode.xlaCluster = node.xlaCluster;
     newOpNode.functionInputIndex = node.functionInputIndex;
     newOpNode.functionOutputIndex = node.functionOutputIndex;
