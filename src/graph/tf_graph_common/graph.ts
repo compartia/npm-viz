@@ -146,9 +146,7 @@ export interface Node {
    * subclasses of Node.
    */
   nodeAttributes: {[key: string]: any;};
-}
-
-export type TensorShape = number[];
+} 
 
 export interface OpNode extends Node {
   op: string;
@@ -163,21 +161,7 @@ export interface OpNode extends Node {
   // The name of the SeriesNode that can contain this node in its series.
   // If there is no such node, then this is null.
   owningSeries: string;
-  /**
-   * Object mapping output channel string to tensor shapes. The output channel
-   * is a string rather than a number because within TensorFlow functions, an
-   * output may be a cross between an output variable and a number (combined
-   * with a colon) such as "foo:2" rather than just a number alone.
-   *
-   * Each tensor shape is an array of numbers, or null. Details:
-   * - null means unknown rank, and therefore entire shape is unknown.
-   * - [4, 2, 1] means rank-3 tensor of size 4x2x1.
-   * - [] means a scalar (rank-0 tensor).
-   * - [1] means rank-1 tensor of size 1 (not the same as scalar).
-   * - [5, -1, 3] means rank-3 tensor of shape is 5x?x3. The size
-   *       of the middle dimension is unknown (encoded as -1).
-   */
-  outputShapes: {[key: string]: TensorShape;};
+  
 
   // The XLA Cluster on which the op ran. Null if it is unknown.
   xlaCluster: string;
@@ -400,8 +384,7 @@ export class OpNodeImpl implements OpNode {
   outEmbeddings: OpNode[];
   parentNode: Node;
   include: InclusionType;
-  owningSeries: string;
-  outputShapes: {[key: string]: TensorShape;};
+  owningSeries: string;  
   nodeAttributes: {[key: string]: any;};
   xlaCluster: string;
   compatible: boolean;
@@ -431,7 +414,6 @@ export class OpNodeImpl implements OpNode {
     this.inputs = normalizeInputs(rawNode.input);
     this.outputs = normalizeInputs(rawNode.output);
 
-    this.outputShapes = extractOutputShapes(rawNode.nodeAttributes);
     this.xlaCluster = extractXlaCluster(rawNode.nodeAttributes);
     this.compatible = false;
     // additional properties
@@ -773,40 +755,11 @@ export class MetaedgeImpl implements Metaedge {
     }
     // Compute the size of the tensor flowing through this
     // base edge.
-    this.totalSize += MetaedgeImpl.computeSizeOfEdge(edge, h);
+    this.totalSize += 1;
     h.maxMetaEdgeSize = Math.max(h.maxMetaEdgeSize, this.totalSize);
   }
 
-  private static computeSizeOfEdge(edge: BaseEdge, h: Hierarchy):
-      number {
-    let opNode = <OpNode> h.node(edge.v);
-    if (!opNode.outputShapes) {
-      // No shape information. Asssume a single number. This gives
-      // a lower bound for the total size.
-      return 1;
-    }
-    h.hasShapeInfo = true;
-
-    // Sum the sizes of all output tensors.
-    return _(opNode.outputShapes).mapValues((shape: number[]) => {
-      // If the shape is unknown, treat it as 1 when computing
-      // total size. This gives a lower bound for the total size.
-      if (shape == null) {
-        return 1;
-      }
-      // Multiply all shapes to get the total size of the tensor.
-      // E.g. The total size of [4, 2, 1] is 4 * 2 * 1.
-      return _(shape).reduce((accumulated, currSize) => {
-        // If this particular dimension is unknown, treat
-        // it as 1 when computing total size. This gives a lower bound
-        // for the total size.
-        if (currSize === -1) {
-          currSize = 1;
-        }
-        return accumulated * currSize;
-      }, 1);
-    }).sum();
-  }
+   
 }
 
 export function createSeriesNode(
@@ -879,56 +832,7 @@ class SeriesNodeImpl implements SeriesNode {
     this.include = InclusionType.UNSPECIFIED;
   }
 }
-
-/**
- * Extracts the shapes of the output tensors from the attr property in the
- * node proto.
- */
-// tslint:disable-next-line:no-any
-function extractOutputShapes(attr: {[key: string]: any}):
-    {[key: string]: TensorShape;} | null {
-  let result = null;
-  // We don't know anything about the output tensors.
-  if (!attr) {
-    return null;
-  }
-  // for (let i = 0; i < attr.length; i++) {
-  //   let {key, value} = attr[i];
-  //   if (key === OUTPUT_SHAPES_KEY) {
-  //     if (!value.list.shape) {
-  //       // The OUTPUT_SHAPES_KEY lacks a value. We know nothing about the shape.
-  //       return null;
-  //     }
-
-  //     // Map all output tensors into array of numbers denoting their shape.
-  //     let result = value.list.shape.map((shape:any) => {
-  //       if (shape.unknown_rank) {
-  //         // This output tensor is of unknown rank. We don't know if it is a
-  //         // scalar, or a tensor, or of what shape it is.
-  //         return null;
-  //       }
-  //       if (shape.dim == null ||
-  //           (shape.dim.length === 1 && shape.dim[0].size == null)) {
-  //         // This output tensor is a scalar.
-  //         return [];
-  //       }
-  //       // This output tensor has a known rank. Map each dimension size
-  //       // into a number.
-  //       return shape.dim.map((dim:any) => {
-  //         // Size can be -1 if this particular dimension is unknown.
-  //         return dim.size;
-  //       });
-  //     });
-  //     // Since we already processed it, remove the entry from the attribute
-  //     // list (saves memory).
-  //     attr.splice(i, 1);
-  //     return result;
-  //   }
-  // }
-  // We didn't find OUTPUT_SHAPES_KEY in attributes, so we don't know anything
-  // about the output tensors.
-  return null;
-}
+ 
 
 /**
  * Extracts the XLA Cluster that an op runs on from the attrs of the OpNode.

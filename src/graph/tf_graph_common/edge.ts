@@ -173,19 +173,7 @@ export function buildGroup(sceneGroup : any,
  */
 export function getLabelForBaseEdge(
     baseEdge: BaseEdge, renderInfo: render.RenderGraphInfo): string | null {
-  let node = <OpNode>renderInfo.getNodeByName(baseEdge.v);
-  if (node.outputShapes == null || _.isEmpty(node.outputShapes)) {
-    return null;
-  }
-  let shape = node.outputShapes[baseEdge.outputTensorKey];
-  if (shape == null) {
-    return null;
-  }
-  if (shape.length === 0) {
-    return 'scalar';
-  }
-  return shape.map(size => { return size === -1 ? '?' : size; })
-      .join(TENSOR_SHAPE_DELIM);
+   return null;
 }
 
 /**
@@ -203,7 +191,7 @@ export function getLabelForEdge(metaedge: Metaedge,
   // Compute the label based on either tensor count or size.
   let isMultiEdge = metaedge.baseEdgeList.length > 1;
   return isMultiEdge ?
-      metaedge.baseEdgeList.length + ' tensors' :
+      metaedge.baseEdgeList.length + ' dependencies' :
       getLabelForBaseEdge(metaedge.baseEdgeList[0], renderInfo);
 }
 
@@ -324,10 +312,10 @@ export function appendEdge(edgeGroup:any, d: EdgeData,
   let pathId = 'path_' + getEdgeKey(d);
   
   let strokeWidth;
-  if (sceneElement.renderHierarchy.edgeWidthFunction) {
-    // Compute edge thickness based on the user-specified method.
-    strokeWidth = sceneElement.renderHierarchy.edgeWidthFunction(d, edgeClass);
-  } else {
+  // if (sceneElement.renderHierarchy.edgeWidthFunction) {
+  //   // Compute edge thickness based on the user-specified method.
+  //   strokeWidth = sceneElement.renderHierarchy.edgeWidthFunction(d, edgeClass);
+  // } else {
     // Encode tensor size within edge thickness.
     let size = 1;
     if (d.label != null && d.label.metaedge != null) {
@@ -335,7 +323,7 @@ export function appendEdge(edgeGroup:any, d: EdgeData,
       size = d.label.metaedge.totalSize;
     }
     strokeWidth = sceneElement.renderHierarchy.edgeWidthSizedBasedScale!(size);
-  }
+  // }
 
   let path = edgeGroup.append('path')
                  .attr('id', pathId)
