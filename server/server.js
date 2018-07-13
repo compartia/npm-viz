@@ -1,5 +1,5 @@
 "use strict";
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var http = require("http");
 var cors = require('cors');
 var PORT = process.env.PORT || 5000;
