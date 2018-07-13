@@ -1,4 +1,4 @@
-mkdir -p ___temp
-cd ___temp
-curl http://registry.npmjs.org/is-primitive/2.0.0 > package.json
+mkdir -p $3
+cd $3
+curl http://registry.npmjs.org/$1/$2 > package.json
 npm i --package-lock-only

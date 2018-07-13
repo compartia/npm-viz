@@ -6,24 +6,69 @@ const PORT = process.env.PORT || 5000
 
 import * as express from "express";
 import * as bodyParser from "body-parser";
+import * as bodyfsParser from "fs";
 import { Request, Response } from "express";
+
+
+import { exec } from 'child_process';
+import { fs } from 'mz';
 
 
 export class Routes {
     public routes(app): void {
-        app.route('/:pack/:ver')
+        app.route('/package/:pack/:ver')
             .get((req: Request, res: Response) => {
 
                 var request = require('request');
-                const url = 'https://registry.npmjs.org/' + req.params.pack + "/" + req.params.ver;
-                console.log("querying " +url);
+                const url = `https://registry.npmjs.org/${req.params.pack}/${req.params.ver}`;
+                console.debug(`querying ${url}`);
                 request(url,
                     (error, response, body) => {
                         res.status(200).send(body);
                     });
 
+            }),
 
-            })
+            app.route('/package-lock/:pack/:ver')
+                .get((req: Request, res: Response) => {
+                    const tempDirName = `${__dirname}/public/packages/${req.params.pack}@${req.params.ver}`;
+
+
+                    const lockFile = `${tempDirName}/package-lock.json`
+                    if (fs.existsSync(lockFile)) {
+
+                        let body: string = fs.readFileSync(lockFile).toString();
+                        // fs.rmdirSync(`${tempDirName}`);
+                        // console.log(body);
+                        res.status(200).send(body);
+
+                    } else {
+                        console.log(tempDirName);
+                        console.log(__dirname);
+                        try {
+                            fs.mkdirSync(tempDirName);
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    
+                        var ex = exec(`sh ${__dirname}/make_pk_lock.sh ${req.params.pack}  ${req.params.ver} ${tempDirName}`,
+                            (error, stdout, stderr) => {
+                                console.log(`${stdout}`);
+                                console.log(`${stderr}`);
+                                if (error !== null) {
+                                    console.error(`exec ERROR: ${error}`);
+                                }
+
+                                let body: string = fs.readFileSync(lockFile).toString();
+                                // fs.rmdirSync(`${tempDirName}`);
+                                // console.log(body);
+                                res.status(200).send(body);
+                            });
+                    }
+
+
+
+                })
     }
 }
 
