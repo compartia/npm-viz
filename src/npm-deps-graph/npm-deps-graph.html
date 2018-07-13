@@ -1,5 +1,12 @@
 <!-- <link type="module"  href="../../node_modules/@polymer/iron-flex-layout/iron-flex-layout-classes.js"> -->
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../../bower_components/paper-tabs/paper-tab.html">
+<link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+
+
 <dom-module id="npm-deps-graph">
 
   <template>
@@ -16,13 +23,89 @@
 
 
       }
+
+      .tabs {
+        --paper-tab-ink: var(--color-brand);
+        --paper-tabs-selection-bar-color: var(--color-brand);
+
+        height: 58px;
+        padding-bottom: 2px;
+        --paper-tabs:{
+          background: var(--color-bg-primary);
+        }
+      }
+
+      .container {
+        width: 100%;
+        height: 100vh;
+
+        @apply --layout-vertical;
+      }
+
+      .header {
+        background: var(--color-bg-secondary);
+        width: 100%;
+
+        @apply --layout-horizontal;
+        @apply --layout-center-justified;
+      }
+
+      .pages {
+        @apply --layout-flex;
+      }
+
+      .header-middle {
+        @apply --layout-flex;
+        @apply --layout-self-center;
+        vertical-align: middle; 
+        font-family: monospace;
+      }
+      .drop-down-contents{
+        padding: var(--padding);
+      }
     </style>
 
 
     <tf-graph-loader id="loader" out-graph="{{_graph}}" package-lock-url="[[_packageLockUrl]]">
-    </tf-graph-loader>  
-    <tf-graph id="graph" color-by="xla_cluster" package-lock-url="{{_packageLockUrl}}"></tf-graph>
+    </tf-graph-loader>
 
+    <div class="container">
+      <div class="header">
+        <div class="header-left">
+          <paper-menu-button vertical-align="bottom" no-animations close-on-activate>
+            <paper-icon-button slot="dropdown-trigger" icon="icons:open-in-browser" alt="open package-lock.json"></paper-icon-button>
+            <div slot="dropdown-content" class="drop-down-contents">open</div>
+          </paper-menu-button>
+        </div>
+
+        <paper-tabs class="tabs" selected="{{selectedTab}}">
+          <paper-tab>Graph</paper-tab>
+          <paper-tab>Package.json</paper-tab>
+          <paper-tab>Package-lock.json</paper-tab>
+        </paper-tabs>
+
+        <div class="header-middle">
+          [[_packageLockUrl]]
+        </div>
+
+        <div>
+
+
+          <paper-menu-button vertical-align="bottom" no-animations close-on-activate dynamic-align>
+            <paper-icon-button slot="dropdown-trigger" icon="icons:settings" alt="settings"></paper-icon-button>
+            <div slot="dropdown-content" class="drop-down-contents"> 
+                <view-settings selected-color-by="{{_colorBy}}"></view-settings>
+            </div>
+          </paper-menu-button>
+        </div>
+      </div>
+
+      <iron-pages class="pages" selected="{{selectedTab}}">
+        <tf-graph id="graph" package-lock-url="{{_packageLockUrl}}" color-by="[[_colorBy]]"></tf-graph>
+        <div>Page 2</div>
+        <div>Page 3</div>
+      </iron-pages>
+    </div>
 
   </template>
 </dom-module>

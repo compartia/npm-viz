@@ -24,7 +24,12 @@ export class NpmDepsGraph extends Polymer.Element {
   
   @property({ type: Object })
   _graph:  SlimGraph;
-  
+
+  @property({ type: Number })
+  selectedTab:number=0;
+
+  @property({ type: String, notify:true })
+  _colorBy:any;
 
   static get
     observers() {
