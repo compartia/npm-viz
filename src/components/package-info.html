@@ -60,6 +60,12 @@
                                     <div class="keyword">[[item]]</div>
                                 </template> -->
             </section>
+            <paper-expansion-panel class="panel-settings" header="Details">
+                    [[jsonLoaded.description]]<br>
+                    [[jsonLoaded.repository.url]]
+
+            </paper-expansion-panel>
+
 
             <paper-expansion-panel class="panel-settings" header="Dependencies ([[outputs.length]])">
                 <template is="dom-repeat" items="[[outputs]]">
