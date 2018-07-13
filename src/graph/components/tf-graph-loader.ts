@@ -61,7 +61,7 @@ export class GraphScene extends Polymer.Element {
     @property({ type: Object, notify: true, readOnly: true })
     outHierarchyParams: any;
 
-    @property({ type: Object})
+    @property({ type: Object, notify: true})
     jsonLoaded: any;
 
     /** @type {Object} */

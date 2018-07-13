@@ -1,5 +1,5 @@
-import {NpmDepsGraph} from './npm-deps-graph'
-import './npm-deps-graph'
+import {NpmDepsGraph} from './app'
+import './app'
 import './test-npm-deps-graph.html'
 
 declare function fixture<T>(element: string):T

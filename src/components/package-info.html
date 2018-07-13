@@ -12,6 +12,10 @@
                 display: inline-block;
             }
 
+            .mono{
+                font-family: var(--mono);
+            }
+
             .dependenciy {
                 border-bottom: 1px solid var(--separator-color);
 
@@ -49,7 +53,7 @@
 
             <section class="padding">
                 <!-- [[selectedNode.name]] Package: [[package.nodeAttributes.package]]/[[package.version]] -->
-                <h2> [[jsonLoaded.name]] [[jsonLoaded.version]]</h2>
+                <h2 class="mono"> [[jsonLoaded.name]] [[jsonLoaded.version]]</h2>
 
                 <!-- [[jsonLoaded.keywords]] -->
                 <template is="dom-repeat" items="[[jsonLoaded.keywords]]">
@@ -102,10 +106,11 @@
                 background: var(--color-hover)
             }
 
+    
+           
 
-            .version,
-            .name {
-                font-family: monospace;
+            .mono{
+                font-family: var(--mono);
             }
 
             .name {
@@ -118,8 +123,8 @@
             }
         </style>
         <div class="dependenciy line" on-mouseover="_nodeListener" on-mouseout="_nodeListener" on-click="_nodeListener">
-            <span class="name">[[item.nodeAttributes.package]]</span>&nbsp;
-            <span class="version">[[item.nodeAttributes.version]]</span>
+            <span class="name mono">[[item.nodeAttributes.package]]</span>&nbsp;
+            <span class="version mono">[[item.nodeAttributes.version]]</span>
         </div>
     </template>
 </dom-module>
