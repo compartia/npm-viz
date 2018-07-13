@@ -4,6 +4,7 @@ import { customElement, property } from 'taktik-polymer-typescript';
 import './tf-graph.html'
 import './tf-graph-scene'
 import '../../components/package-info'
+import '../../components/settings'
 
 import * as render from '../tf_graph_common/render';
 import * as graph from '../tf_graph_common/graph';
@@ -247,8 +248,7 @@ export class TfGraphElement extends Polymer.Element {
     return this.renderHierarchy.getNearestVisibleAncestor(name);
   }
 
-  static
-  listeners= {
+  static listeners= {
     'graph-select': '_graphSelected',
     'disable-click': '_disableClick',
     'enable-click': '_enableClick',

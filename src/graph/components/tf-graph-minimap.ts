@@ -20,7 +20,7 @@ export class MinimapElement extends Polymer.Element {
    * @param labelPadding Padding in pixels due to the main graph labels.
    */
   public init(svg, zoomG, mainZoom, maxWAndH, labelPadding) {
-    return new Minimap(svg, zoomG, mainZoom, this, maxWAndH, labelPadding);
-  }
+    return new Minimap(svg, zoomG, mainZoom, this.$.minimapContainer, maxWAndH, labelPadding, this.$.minimapSvg);
+  } 
 }
  
