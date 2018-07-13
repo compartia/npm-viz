@@ -5,19 +5,57 @@ var cors = require('cors');
 var PORT = process.env.PORT || 5000;
 var express = require("express");
 var bodyParser = require("body-parser");
+var child_process_1 = require("child_process");
+var mz_1 = require("mz");
 var Routes = /** @class */ (function () {
     function Routes() {
     }
     Routes.prototype.routes = function (app) {
-        app.route('/:pack/:ver')
+        app.route('/package/:pack/:ver')
             .get(function (req, res) {
             var request = require('request');
-            var url = 'https://registry.npmjs.org/' + req.params.pack + "/" + req.params.ver;
-            console.log("querying " + url);
+            var url = "https://registry.npmjs.org/" + req.params.pack + "/" + req.params.ver;
+            console.debug("querying " + url);
             request(url, function (error, response, body) {
                 res.status(200).send(body);
             });
-        });
+        }),
+            app.route('/package-lock/:pack/:ver')
+                .get(function (req, res) {
+                var tempDirName = __dirname + "/public/packages/" + req.params.pack + "@" + req.params.ver;
+                var lockFile = tempDirName + "/package-lock.json";
+                if (mz_1.fs.existsSync(lockFile)) {
+                    var body = mz_1.fs.readFileSync(lockFile).toString();
+                    // fs.rmdirSync(`${tempDirName}`);
+                    // console.log(body);
+                    res.status(200).send(body);
+                }
+                else {
+                    try {
+                        console.log("mkdir" + tempDirName);
+                        mz_1.fs.mkdirSync(tempDirName);
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                    var ex = child_process_1.exec("sh " + __dirname + "/make_pk_lock.sh " + req.params.pack + "  " + req.params.ver + " " + tempDirName, function (error, stdout, stderr) {
+                        console.log("" + stdout);
+                        console.log("" + stderr);
+                        if (error !== null) {
+                            console.error("exec ERROR: " + error);
+                        }
+                        try {
+                            var body = mz_1.fs.readFileSync(lockFile).toString();
+                            res.status(200).send(body);
+                        }
+                        catch (e) {
+                            res.status(200).send(e);
+                        }
+                        // fs.rmdirSync(`${tempDirName}`);
+                        // console.log(body);
+                    });
+                }
+            });
     };
     return Routes;
 }());

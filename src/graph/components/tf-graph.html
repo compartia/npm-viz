@@ -3,6 +3,7 @@
 
 <link rel="import" href="../../../bower_components/vaadin-split-layout/vaadin-split-layout.html">
 <link rel="import" href="../../../bower_components/paper-expansion-panel/paper-expansion-panel.html">
+<link rel="import" href="../../../bower_components/paper-input/paper-input.html">
 
 <dom-module id="tf-graph">
   <template>
@@ -87,10 +88,13 @@
     <div class="container">
       <div class="vertical">
         
-        <div class="title">NAME
-            <template is="dom-if" if="[[title]]">
-                <h2>[[title]]</h2>
-              </template>
+        <div class="title">
+          <paper-input value="{{packageLockUrl}}"></paper-input>
+
+
+          <template is="dom-if" if="[[title]]">
+              <h2>[[title]]</h2>
+          </template>
         </div>
 
         <vaadin-split-layout orientation="horizontal" class="split">
@@ -114,6 +118,8 @@
             <view-settings selected-color-by="{{_colorBy}}"></view-settings>
 
             <package-info 
+              id="infoPanel"
+              on-load-graph="_onLoadGraphEvent"
               selected-node="{{selectedNode}}"
               highlighted-node="{{highlightedNode}}"
               graph-hierarchy="{{graphHierarchy}}"></package-info>

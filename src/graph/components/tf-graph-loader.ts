@@ -21,7 +21,9 @@ import { PackageLockGraph } from '../npmjson';
 
 @customElement('tf-graph-loader')
 export class GraphScene extends Polymer.Element {
-
+    
+    @property({ type: String })
+    packageLockUrl:string;
 
     /**
      * @type {{value: number, msg: string}}

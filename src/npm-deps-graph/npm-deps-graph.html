@@ -16,50 +16,13 @@
 
 
       }
-
-      .fullsize {
-        height: 100vh;
-        width: 100%;
-        display: block;
-        background: #fcb2ff;
-      }
-
-      .container {
-        background: #fefefe;
-        border-radius: 3px;
-        box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.14),
-        0 3px 4px 0 rgba(0, 0, 0, 0.12),
-        0 1px 8px 0 rgba(0, 0, 0, 0.20);
-
-        width: 30%;
-        position: absolute;
-        left: 50%;
-        top: 5%;
-        transform: translateX(-50%);
-        transition: height .2s ease-in;
-      }
-
-      h1 {
-        font-size: 1.5em;
-        font-weight: bold;
-        color: #fefefe;
-        background: #fcb2ff;
-        padding: 1em;
-        margin-top: 0;
-        border-radius: 3px 3px 0 0;
-        text-align: center;
-      }
     </style>
 
 
+    <tf-graph-loader id="loader" out-graph="{{_graph}}" package-lock-url="[[_packageLockUrl]]">
+    </tf-graph-loader>  
+    <tf-graph id="graph" color-by="xla_cluster" package-lock-url="{{_packageLockUrl}}"></tf-graph>
 
-    <tf-graph-loader id="loader" out-graph="{{_graph}}"></tf-graph-loader>
-    
-    <tf-graph id="graph" color-by="xla_cluster"></tf-graph>
 
-    <!-- <div class="container layout horizontal">
-      <h1>Hello from
-        <br />[[myProperty]]</h1>
-    </div> -->
   </template>
 </dom-module>

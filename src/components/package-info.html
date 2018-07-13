@@ -41,7 +41,7 @@
         </style>
         <!-- <iron-request id="apiRequest"></iron-request> -->
 
-        <iron-ajax id="apiRequest" url="http://localhost:5000/[[slectedNode.nodeAttributes.package]]/[[slectedNode.nodeAttributes.version]]"
+        <iron-ajax id="apiRequest" url="http://localhost:5000/package/[[slectedNode.nodeAttributes.package]]/[[slectedNode.nodeAttributes.version]]"
             handle-as="json" last-response="{{jsonLoaded}}" method="GET" debounce-duration="300"></iron-ajax>
 
         <template is="dom-if" if="[[jsonLoaded]]">
@@ -56,10 +56,18 @@
                     <div class="keyword">[[item]]</div>
                 </template>
 
+                <paper-button raised on-tap="loadGraph">load graph</paper-button>
+
                 <!-- <template is="dom-repeat" items="[[jsonLoaded.dependencies]]">
                                     <div class="keyword">[[item]]</div>
                                 </template> -->
             </section>
+            <paper-expansion-panel class="panel-settings" header="Details">
+                    [[jsonLoaded.description]]<br>
+                    [[jsonLoaded.repository.url]]
+
+            </paper-expansion-panel>
+
 
             <paper-expansion-panel class="panel-settings" header="Dependencies ([[outputs.length]])">
                 <template is="dom-repeat" items="[[outputs]]">
