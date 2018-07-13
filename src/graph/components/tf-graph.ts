@@ -33,6 +33,9 @@ export class TfGraphElement extends Polymer.Element {
   @property({ type: Object, notify: true, readOnly: true })
   renderHierarchy: render.RenderGraphInfo;
 
+  @property({ type: String, notify: true })
+  packageLockUrl:string = 'http://localhost:5000/package-lock/is-primitive/2.0.0';
+
   @property({ type: Object })
   stats: Object;
 
@@ -272,6 +275,9 @@ export class TfGraphElement extends Polymer.Element {
     'annotation-select': '_nodeSelected',
     'annotation-highlight': '_nodeHighlighted',
     'annotation-unhighlight': '_nodeUnhighlighted',
+
+    // 'load-graph': '_onLoadGraphEvent',
+    
   }
 
   private _graphChanged():void {
@@ -466,9 +472,15 @@ export class TfGraphElement extends Polymer.Element {
     return !x;
   }
 
+  private _onLoadGraphEvent({detail}){
+    // console.error(event.detail);
+    this.packageLockUrl = `http://localhost:5000/package-lock/${detail.name}/${detail.version}`;
+  }
+
   public ready() {
     super.ready();
  
+    // (<HTMLElement>this.$.infoPanel).on
     _.toPairs(TfGraphElement.listeners).forEach(pair => {
       let listener = (e) => {
         //console.error(e);

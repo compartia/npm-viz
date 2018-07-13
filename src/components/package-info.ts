@@ -1,4 +1,3 @@
-
 import "polymer/polymer.html";
 import { customElement, property } from 'taktik-polymer-typescript';
 import './package-info.html';
@@ -63,6 +62,16 @@ export class PackageInfo extends Polymer.Element {
         'node-list-item-mouseover': '_nodeListItemMouseover',
         'node-list-item-mouseout': '_nodeListItemMouseout'
     };
+
+    public loadGraph() :void{
+        // this.fire
+        let detail = {
+            name: this.jsonLoaded.name,
+            version: this.jsonLoaded.version,
+        };
+        console.error("firing");
+        this.dispatchEvent(new CustomEvent("load-graph", { bubbles: true, detail: detail }));
+    }
 
     private _nodeListItemClicked(event) {
         this.selectedNode = event.detail.nodeName;

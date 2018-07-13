@@ -31,9 +31,8 @@ var Routes = /** @class */ (function () {
                     res.status(200).send(body);
                 }
                 else {
-                    console.log(tempDirName);
-                    console.log(__dirname);
                     try {
+                        console.log("mkdir" + tempDirName);
                         mz_1.fs.mkdirSync(tempDirName);
                     }
                     catch (e) {
@@ -45,10 +44,15 @@ var Routes = /** @class */ (function () {
                         if (error !== null) {
                             console.error("exec ERROR: " + error);
                         }
-                        var body = mz_1.fs.readFileSync(lockFile).toString();
+                        try {
+                            var body = mz_1.fs.readFileSync(lockFile).toString();
+                            res.status(200).send(body);
+                        }
+                        catch (e) {
+                            res.status(200).send(e);
+                        }
                         // fs.rmdirSync(`${tempDirName}`);
                         // console.log(body);
-                        res.status(200).send(body);
                     });
                 }
             });

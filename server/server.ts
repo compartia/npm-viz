@@ -43,9 +43,10 @@ export class Routes {
                         res.status(200).send(body);
 
                     } else {
-                        console.log(tempDirName);
-                        console.log(__dirname);
+                        
+                        
                         try {
+                            console.log("mkdir"+tempDirName);
                             fs.mkdirSync(tempDirName);
                         } catch (e) {
                             console.error(e);
@@ -59,10 +60,16 @@ export class Routes {
                                     console.error(`exec ERROR: ${error}`);
                                 }
 
-                                let body: string = fs.readFileSync(lockFile).toString();
+                                try {
+                                    let body: string = fs.readFileSync(lockFile).toString();
+                                    res.status(200).send(body);
+                                } catch (e) {
+                                    res.status(200).send(e);
+                                }
+                                
                                 // fs.rmdirSync(`${tempDirName}`);
                                 // console.log(body);
-                                res.status(200).send(body);
+                                
                             });
                     }
 
