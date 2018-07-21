@@ -22,7 +22,7 @@ import * as _ from 'lodash';
 import { EdgeData } from './annotation';
 import * as edge from './edge';
 import * as graph from './graph';
-import { BridgeNode, createGraph, EllipsisNode, getHierarchicalPath, GraphType, GroupNode, InclusionType, Metaedge, Metanode, Node, NodeType, OpNode } from './graph';
+import { createGraph, EllipsisNode, getHierarchicalPath, GraphType, GroupNode, InclusionType, Metaedge, Metanode, Node, NodeType, OpNode } from './graph';
 import * as hierarchy from './hierarchy';
 import { NodeDef } from './proto';
 

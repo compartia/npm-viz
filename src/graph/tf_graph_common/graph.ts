@@ -176,12 +176,6 @@ export interface OpNode extends Node {
   functionOutputIndex: number;
 }
 
-export interface BridgeNode extends Node {
-  /**
-   * Whether this bridge node represents edges coming into its parent node.
-   */
-  inbound: boolean;
-}
 
 /**
  * A node that is used when there are more than the maximum number of allowed
