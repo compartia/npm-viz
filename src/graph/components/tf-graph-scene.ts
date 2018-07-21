@@ -286,9 +286,7 @@ export class GraphScene extends Polymer.Element {
     };
 
     /** Main method for building the scene */
-    private _build(renderHierarchy: RenderGraphInfo) {
-
-        this.templateIndex = renderHierarchy.hierarchy.getTemplateIndex();
+    private _build(renderHierarchy: RenderGraphInfo) {        
 
         util.time('tf-graph-scene (layout):', () => {
             layout.layoutScene(renderHierarchy.root);

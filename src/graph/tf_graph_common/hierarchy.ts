@@ -50,11 +50,8 @@ export interface LibraryFunctionData {
 
 export interface Hierarchy {
   root: Metanode;
-  libraryFunctions: {[key: string]: LibraryFunctionData};
-  templates: {[templateId: string]: string[]};
   /** List of all device names */
   devices: string[];
-
   /** True if at least one tensor in the graph has shape information */
   hasShapeInfo: boolean;
   /** The maximum size across all meta edges. Used for scaling thickness. */
@@ -66,17 +63,14 @@ export interface Hierarchy {
   // getBridgegraph(nodeName: string): graphlib.Graph<GroupNode|OpNode, Metaedge> | null;
   getPredecessors(nodeName: string): Edges;
   getSuccessors(nodeName: string): Edges;
-  getTopologicalOrdering(nodeName: string): { [childName: string]: number } | null;
-  getTemplateIndex(): (string:string) => number;
+  getTopologicalOrdering(nodeName: string): { [childName: string]: number } | null;  
 }
 
 /**
  * Class for the Graph Hierarchy for TensorFlow graph.
  */
 class HierarchyImpl implements Hierarchy {
-  root: Metanode;
-  libraryFunctions: {[key: string]: LibraryFunctionData};
-  templates: {[templateId: string]: string[]};
+  root: Metanode;  
   private index: {[nodeName: string]: GroupNode|OpNode};
   devices: string[];
    
@@ -94,8 +88,6 @@ class HierarchyImpl implements Hierarchy {
     this.graphOptions = graphOptions || {};
     this.graphOptions.compound = true;
     this.root = createMetanode(ROOT_NAME, this.graphOptions);
-    this.libraryFunctions = {};
-    this.templates = {};
     this.devices = [];
     /**
      * @type {Object} Dictionary object that maps node name to the node
@@ -299,18 +291,7 @@ class HierarchyImpl implements Hierarchy {
     }
     return ordering;
   }
-
-  /**
-   * Returns a d3 Ordinal function that can be used to look up the index of
-   * a node based on its template id.
-   */
-  getTemplateIndex(): (string:string) => number {
-    let templateNames = d3.keys(this.templates);
-    let templateIndex = d3.scaleOrdinal()
-        .domain(templateNames)
-        .range(d3.range(0, templateNames.length));
-    return (templateId: string) => <number>templateIndex(templateId);
-  }
+ 
 }
 
 /**
