@@ -5,6 +5,7 @@
 <link rel="import" href="../bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../bower_components/paper-progress/paper-progress.html">
 
  
  
@@ -47,9 +48,9 @@
 
       .header {
 
-        -webkit-box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.2);
-        -moz-box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.2);
-        box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.2);
+        -webkit-box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.1);
+        -moz-box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.1);
+        box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.1);
 
         z-index: 200;
         background: var(--color-bg-secondary);
@@ -90,13 +91,27 @@
         padding: 0;
         margin: 0;
       }
+
+      #progress{
+        --paper-progress-active-color: var(--color-accent);
+        width:100%;
+      }
     </style>
 
 
-    <tf-graph-loader id="loader" json-loaded="{{packageInfo}}" out-graph="{{_graph}}" package-lock-url="[[_packageLockUrl]]">
+    <tf-graph-loader id="loader" 
+      json-loaded="{{packageInfo}}" 
+      out-graph="{{_graph}}" 
+      package-lock-url="[[_packageLockUrl]]"
+      progress="{{progress}}">
     </tf-graph-loader>
 
     <div class="container">
+      <paper-progress 
+        id="progress" 
+        value="[[progress.value]]"
+        indeterminate="[[progress.indeterminate]]"></paper-progress>
+
       <div class="header">
         <div class="header-left">
           <paper-menu-button dynamic-align no-animations close-on-activate>
@@ -130,14 +145,12 @@
       </div>
 
       <iron-pages class="pages" selected="{{selectedTab}}">
-        <tf-graph id="graph" package-lock-url="{{_packageLockUrl}}" color-by="[[_colorBy]]"></tf-graph>
+        <tf-graph id="graph" progress="[[progress]]" package-lock-url="{{_packageLockUrl}}" color-by="[[_colorBy]]"></tf-graph>
 
         <div>Page 2</div>
 
         <div>
-          <pre class="mono">[[_packageLockContents]]</pre>
-
-           
+          <pre class="mono">[[_packageLockContents]]</pre>           
         </div>
 
 

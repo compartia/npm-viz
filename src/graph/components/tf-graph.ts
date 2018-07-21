@@ -412,7 +412,8 @@ export class TfGraphElement extends Polymer.Element {
     // Rebuild the render hierarchy with the updated series grouping map.
     this.set('progress', {
       value: 0,
-      msg: ''
+      msg: '',
+      name: 'tf-graph'
     });
     var tracker = util.getTracker(this);
     var hierarchyTracker = util.getSubtaskTracker(tracker, 100,

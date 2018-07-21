@@ -53,7 +53,7 @@ import * as _ from 'lodash';
       updateProgress: function(value:number) {
         polymerComponent.set('progress', {
           value: polymerComponent.progress.value + value,
-          msg: polymerComponent.progress.msg
+          msg: polymerComponent.progress.msg,          
         });
       },
       reportError: function(msg: string, err: Error) {

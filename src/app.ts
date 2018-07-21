@@ -17,30 +17,33 @@ import * as hierarchy from './graph/tf_graph_common/hierarchy';
 export class NpmDepsGraph extends Polymer.Element {
 
   @property({ type: String })
-  _packageLockContents:string;
+  _packageLockContents: string;
+
+  @property({ type: Object, notify: true })
+  progress: any;
 
   @property({ type: Object })
-  _graph:  SlimGraph;
+  _graph: SlimGraph;
 
-  @property({ type: Object, observer:'packageInfoChanged' })
-  packageInfo:any;
+  @property({ type: Object, observer: 'packageInfoChanged' })
+  packageInfo: any;
 
   @property({ type: Number })
-  selectedTab:number=0;
+  selectedTab: number = 0;
 
-  @property({ type: String, notify:true })
-  _colorBy:any;
+  @property({ type: String, notify: true })
+  _colorBy: any;
 
   static get
     observers() {
-      return [
-        '_graphUpdated(_graph)',
-      ]
+    return [
+      '_graphUpdated(_graph)',
+    ]
   };
 
-  public packageInfoChanged(e){
-    if(this.packageInfo){
-      this._packageLockContents=JSON.stringify(this.packageInfo, null, ' ');
+  public packageInfoChanged(e) {
+    if (this.packageInfo) {
+      this._packageLockContents = JSON.stringify(this.packageInfo, null, ' ');
     }
   }
   private _graphUpdated(slimGraph: SlimGraph) {
@@ -48,7 +51,7 @@ export class NpmDepsGraph extends Polymer.Element {
     const hierarchyTracker = getSubtaskTracker(
       tracker, 100, 'Namespace hierarchy');
 
-    const hierarchyOptions:hierarchy.HierarchyParams = <hierarchy.HierarchyParams>{};
+    const hierarchyOptions: hierarchy.HierarchyParams = <hierarchy.HierarchyParams>{};
 
     hierarchy.build(slimGraph, hierarchyOptions, hierarchyTracker).then(
       (graphHierarchy) => {

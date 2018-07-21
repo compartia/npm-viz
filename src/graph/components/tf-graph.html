@@ -103,9 +103,11 @@
                 handle-edge-selected="[[handleEdgeSelected]]"></graph-scene>
           </div>
           <div class="splitter-content-right">
-
+              progress=[[progress]]  [[progress.value]] indeterminate=[[progress.indeterminate]]
+              msg=[[progress.msg]]
             <package-info 
               id="infoPanel"
+              progress="[[progress]]"
               on-load-graph="_onLoadGraphEvent"
               selected-node="{{selectedNode}}"
               highlighted-node="{{highlightedNode}}"

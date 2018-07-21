@@ -24,7 +24,8 @@
     "paper-input": "PolymerElements/paper-input#^2.2.3",
     "paper-tabs": "PolymerElements/paper-tabs#^2.1.1",
     "iron-pages": "PolymerElements/iron-pages#^2.1.1",
-    "paper-dropdown-menu": "PolymerElements/paper-dropdown-menu#^2.1.0"
+    "paper-dropdown-menu": "PolymerElements/paper-dropdown-menu#^2.1.0",
+    "paper-progress": "PolymerElements/paper-progress#^2.1.1"
   },
   "devDependencies": {
     "web-component-tester": "^6.3.0"

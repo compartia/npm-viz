@@ -1,5 +1,6 @@
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
 
 <dom-module id="package-info">
     <template>
@@ -55,12 +56,14 @@
                 <!-- [[selectedNode.name]] Package: [[package.nodeAttributes.package]]/[[package.version]] -->
                 <h2 class="mono"> [[jsonLoaded.name]] [[jsonLoaded.version]]</h2>
 
+                <paper-button raised on-tap="loadGraph">load graph</paper-button>
+
                 <!-- [[jsonLoaded.keywords]] -->
                 <template is="dom-repeat" items="[[jsonLoaded.keywords]]">
                     <div class="keyword">[[item]]</div>
                 </template>
 
-                <paper-button raised on-tap="loadGraph">load graph</paper-button>
+                
 
                 <!-- <template is="dom-repeat" items="[[jsonLoaded.dependencies]]">
                                     <div class="keyword">[[item]]</div>

@@ -362,28 +362,24 @@ export interface HierarchyParams {
  */
 export function build(graph:  SlimGraph, params: HierarchyParams,
     tracker: ProgressTracker): Promise<Hierarchy|void> {
+
   let h = new HierarchyImpl({'rankdir': params.rankDirection});
   let seriesNames: { [name: string]: string } = {};
+  
   return util
       .runAsyncTask(
           'Adding nodes', 20,
           () => {
             // Get all the possible device and XLA cluster names.
             let deviceNames:{[key:string]:boolean} = {};
-            let xlaClusterNames:{[key:string]:boolean} = {};
             _.each(graph.nodes, (node, nodeName) => {
               if (node.device) {
                 deviceNames[node.device] = true;
               }
-
-              if (node.xlaCluster) {
-                xlaClusterNames[node.xlaCluster] = true;
-              }
             });
 
             h.devices = _.keys(deviceNames);
-            h.xlaClusters = _.keys(xlaClusterNames);
-
+ 
             addNodes(h, graph);
           },
           tracker)
@@ -397,16 +393,10 @@ export function build(graph:  SlimGraph, params: HierarchyParams,
         }, tracker);
       })
       .then(() => {
-        return util.runAsyncTask('Adding edges', 30, () => {
+        return util.runAsyncTask('Adding edges', 60, () => {
           addEdges(h, graph, seriesNames);
         }, tracker);
-      })
-      // .then(() => {
-      //   return util.runAsyncTask(
-      //       'Finding similar subgraphs', 30, () => {
-      //         h.templates = template.detect(h, params.verifyTemplate);
-      //       }, tracker);
-      // })
+      })  
       .then(() => {
         return h;
       });

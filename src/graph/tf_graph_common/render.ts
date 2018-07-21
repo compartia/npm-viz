@@ -125,7 +125,7 @@ const PARAMS = {
    * The minimum in or out degree a node must have in order to be possibly
    * extracted.
    */
-  minDegreeForExtraction: 5,
+  minDegreeForExtraction: 40,
   /**
    * Maximum number of control edges a node can have before they aren't
    * displayed.
