@@ -157,9 +157,6 @@ export interface OpNode extends Node {
   owningSeries: string;
   
 
-  // The XLA Cluster on which the op ran. Null if it is unknown.
-  xlaCluster: string;
-
   // Whether op is compatible with its assigned device.  Currently, if an op
   // is not specified a device, the device is defaulted to the TPU.
   // Furthermore, all ops are considered compatible for CPU and GPU devices,
@@ -204,80 +201,7 @@ export interface GroupNode extends Node {
    * BaseEdge(s) from which it was created.
    */
   metagraph: graphlib.Graph<GroupNode|OpNode, Metaedge>;
-
-  /**
-   * The bridgegraph contains only edges which link immediate children of this
-   * group with nodes outside of the metagraph. As in the metagraph, all edge
-   * label objects are Metaedges which contain references to the original
-   * BaseEdge(s) that contribute to it.
-   *
-   * For a Metaedge in the bridgegraph, its external endpoint will be the same
-   * as the metagraph edge from which it came. This is most easily explained
-   * by example.
-   *
-   * Consider an original graph that contains a BaseEdge A/B/C->Z/Y/X.
-   *
-   *     +-------+    (BaseEdge)     +-------+
-   *     | A/B/C |>----------------->| Z/Y/X |
-   *     +-------+                   +-------+
-   *
-   * When we construct the Root's metagraph, it will contain nodes for A and Z,
-   * and a Metaedge A->Z. The A->Z Metaedge will contain the original BaseEdge
-   * A/B/C->Z/Y/X in its baseEdgeGraph. The Root's bridgegraph will always be
-   * empty.
-   *
-   *     +---+    (Root.metagraph edge)    +---+
-   *     | A |>--------------------------->| Z |
-   *     +---+                             +---+
-   *
-   * Now consider the Metanode A. Its metagraph will contain a Metanode for A/B
-   * and no edges. A's bridgegraph will have one Metaedge from A/B->Z, which
-   * was derived from the Root's Metaedge A->Z. That Metaedge will contain the
-   * original BaseEdge in its baseEdgeGraph.
-   *
-   *     +---------+
-   *     | A       |
-   *     |  +---+  |   (A.bridgegraph edge)    +---+
-   *     |  | B |>---------------------------->| Z |
-   *     |  +---+  |                           +---+
-   *     +---------+
-   *
-   * Finally, consider the Metanode A/B. Its metagraph will contain a Metanode
-   * for A/B/C and again no edges. A/B's bridgegraph will have one Metaedge
-   * from A/B/C->Z, which was derived from A's bridgegraph Metaedge A/B->Z.
-   * As before, the A/B/C->Z Metaedge will contain the original BaseEdge in its
-   * baseEdgeGraph.
-   *
-   *     +---------------+
-   *     | A             |
-   *     |  +---------+  |
-   *     |  | B       |  |
-   *     |  |  +---+  |  |   (A/B.bridgegraph edge)      +---+
-   *     |  |  | C |>----------------------------------->| Z |
-   *     |  |  +---+  |  |                               +---+
-   *     |  +---------+  |
-   *     +---------------+
-   *
-   * Likewise, under the Metanode Z and Z/Y, to compute the bridgegraph, we'll
-   * end up with Metaedges A->Z/Y and A->Z/Y/X respectively. So the original
-   * BaseEdge A/B/C->Z/Y/X becomes four different Metaedges in four different
-   * bridgegraphs:
-   *
-   *   + A/B->Z in GroupNode A's bridgegraph,
-   *   + A/B/C->Z in GroupNode A/B's bridgegraph,
-   *   + A->Z/Y in GroupNode Z's bridgegraph, and
-   *   + A->Z/Y/X in GroupNode Z/Y's bridgegraph.
-   *
-   * Considering any BaseEdge then, if N is the number of path segments in the
-   * source and M is the number of path segments in the destination, then the
-   * total number of bridgegraph edges you could create would be (N-1)(M-1).
-   *
-   * For this reason, it is computationally expensive to generate all the
-   * bridgegraphs for all the Metanodes, and instead they should be computed
-   * on demand as needed.
-   */
-  bridgegraph: graphlib.Graph<GroupNode|OpNode, Metaedge>;
-
+ 
   /**
    * Stores how many times each device name appears in its children
    * op nodes. Used to color group nodes by devices.
@@ -372,7 +296,7 @@ export class OpNodeImpl implements OpNode {
   include: InclusionType;
   owningSeries: string;  
   nodeAttributes: {[key: string]: any;};
-  xlaCluster: string;
+  
   compatible: boolean;
 
   // This field is only defined if the op node represents an input_arg to a
@@ -400,7 +324,6 @@ export class OpNodeImpl implements OpNode {
     this.inputs = normalizeInputs(rawNode.input);
     this.outputs = normalizeInputs(rawNode.output);
 
-    this.xlaCluster = extractXlaCluster(rawNode.nodeAttributes);
     this.compatible = false;
     // additional properties
     this.type = NodeType.OP;
@@ -678,27 +601,7 @@ class SeriesNodeImpl implements SeriesNode {
   }
 }
  
-
-/**
- * Extracts the XLA Cluster that an op runs on from the attrs of the OpNode.
- * @param attr The attr property.
- * @return A string that is the name of the cluster. Or null if it could not be
- *     determined.
- */
-// tslint:disable-next-line:no-any
-function extractXlaCluster(attr: {[key: string]: any;}): string | null {
-  if (!attr) {
-    return null;
-  }
-
-  // // Find the attribute for XLA cluster if there is one.
-  // for (let i = 0; i < attr.length; i++) {
-  //   if (attr[i].key === _XLA_CLUSTER_KEY) {
-  //     return attr[i].value['s'] || null;
-  //   }
-  // }
-  return null;
-}
+ 
 
 /**
  * Normalizes the inputs and extracts associated metadata:

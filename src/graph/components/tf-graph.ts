@@ -222,14 +222,7 @@ export class TfGraphElement extends Polymer.Element {
             device: deviceName,
             color: renderGraph.deviceColorMap(deviceName)
           };
-        }),
-        xla_cluster: _.map(renderGraph.xlaClusterColorMap.domain(),
-            function(xlaClusterName) {
-          return {
-            xla_cluster: xlaClusterName,
-            color: renderGraph.xlaClusterColorMap(xlaClusterName)
-          };
-        }),
+        })         
       });
       (this as any)._setRenderHierarchy(renderGraph);
 

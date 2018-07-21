@@ -207,7 +207,7 @@ export class RenderGraphInfo {
   private index: {[nodeName: string]: RenderNodeInfo};
   renderedOpNames: string[];
   deviceColorMap?: d3.ScaleOrdinal<string, string>;
-  xlaClusterColorMap?: d3.ScaleOrdinal<string, string>;
+   
   cardinalityScale?: d3.ScaleLinear<string, string>;
   computeTimeScale?: d3.ScaleLinear<string, string>;
   /** Scale for the thickness of edges when there is no shape information. */
@@ -247,14 +247,7 @@ export class RenderGraphInfo {
     this.deviceColorMap = d3.scaleOrdinal<string>()
         .domain(this.hierarchy.devices)
         .range(_.map(d3.range(this.hierarchy.devices.length),
-                     MetanodeColors.DEVICE_PALETTE));
-
-    this.xlaClusterColorMap =
-        d3.scaleOrdinal<string>()
-            .domain(this.hierarchy.xlaClusters)
-            .range(_.map(
-                d3.range(this.hierarchy.xlaClusters.length),
-                MetanodeColors.XLA_CLUSTER_PALETTE));
+                     MetanodeColors.DEVICE_PALETTE));     
 
     let topLevelGraph = this.hierarchy.root.metagraph;
     
@@ -333,14 +326,7 @@ export class RenderGraphInfo {
     this.renderedOpNames.push(nodeName);
 
     renderInfo.cardinalityColor = this.cardinalityScale(node.cardinality);    
-
-    if (!node.isGroupNode) {
-      let clusterName = (node as OpNode).xlaCluster;
-      if (clusterName) {
-        renderInfo.xlaClusterColor = this.xlaClusterColorMap!(clusterName);
-      }
-    }
-
+ 
     // We only fade nodes when we're displaying stats.
     renderInfo.isFadedOut = this.displayingStats;
 
@@ -479,7 +465,6 @@ export class RenderGraphInfo {
     // Update various properties.
     newOpNode.cardinality = node.cardinality;
     newOpNode.include = node.include;    
-    newOpNode.xlaCluster = node.xlaCluster;
     newOpNode.functionInputIndex = node.functionInputIndex;
     newOpNode.functionOutputIndex = node.functionOutputIndex;
 
@@ -1112,11 +1097,6 @@ export class RenderNodeInfo {
    * color with proportion 1.0.
    */
   deviceColors: Array<{color: string, proportion: number}>;
-
-  /**
-   * Color according to the XLA cluster of this node.
-   */
-  xlaClusterColor: string;
 
 
   cardinalityColor: string;

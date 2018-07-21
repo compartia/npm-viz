@@ -54,8 +54,7 @@ export interface Hierarchy {
   templates: {[templateId: string]: string[]};
   /** List of all device names */
   devices: string[];
-  /** List of all XLA cluster names */
-  xlaClusters: string[];
+
   /** True if at least one tensor in the graph has shape information */
   hasShapeInfo: boolean;
   /** The maximum size across all meta edges. Used for scaling thickness. */
@@ -80,7 +79,7 @@ class HierarchyImpl implements Hierarchy {
   templates: {[templateId: string]: string[]};
   private index: {[nodeName: string]: GroupNode|OpNode};
   devices: string[];
-  xlaClusters: string[];
+   
   hasShapeInfo = false;
   maxMetaEdgeSize = 1;
   orderings: { [nodeName: string]: { [childName: string]: number } };
@@ -98,7 +97,6 @@ class HierarchyImpl implements Hierarchy {
     this.libraryFunctions = {};
     this.templates = {};
     this.devices = [];
-    this.xlaClusters=[];
     /**
      * @type {Object} Dictionary object that maps node name to the node
      * (could be op-node, metanode, or series-node)
