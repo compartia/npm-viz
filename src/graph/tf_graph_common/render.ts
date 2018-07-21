@@ -22,10 +22,9 @@ import * as _ from 'lodash';
 import { EdgeData } from './annotation';
 import * as edge from './edge';
 import * as graph from './graph';
-import { BridgeNode, createGraph, EllipsisNode, FUNCTION_LIBRARY_NODE_PREFIX, getHierarchicalPath, GraphType, GroupNode, InclusionType, Metaedge, Metanode, Node, NodeType, OpNode } from './graph';
+import { BridgeNode, createGraph, EllipsisNode, getHierarchicalPath, GraphType, GroupNode, InclusionType, Metaedge, Metanode, Node, NodeType, OpNode } from './graph';
 import * as hierarchy from './hierarchy';
 import { NodeDef } from './proto';
-import * as util from './util';
 
 
 const UNKNOWN="___unknown___";
@@ -195,7 +194,7 @@ const PARAMS = {
  * __function_library__foo_deadb00f_42.
  */
 const nodeDisplayNameRegex = new RegExp(
-    '^(?:' + graph.FUNCTION_LIBRARY_NODE_PREFIX +
+    '^(?:' + '__SOME__' +
         ')?(\\w+)_[a-z0-9]{8}(?:_\\d+)?$');
 
 /**
@@ -807,46 +806,7 @@ export class RenderGraphInfo {
 
     const nodesThatGotCloned: graph.Node[] = [];
     const functionCallMetanodesToAdd: graph.Metanode[] = [];
-    if (!_.isEmpty(this.hierarchy.libraryFunctions)) {
-      // This graph has library functions. Add them to the current
-      // sub-hierarchy if necessary.
-      _.each(metagraph.nodes(), childName => {
-        // Why is this so often undefined?
-        const originalNode = metagraph.node(childName) as OpNode;
-        const libraryFunctionData =
-            this.hierarchy.libraryFunctions[originalNode.op];
-        if (!libraryFunctionData) {
-          // This node is not a function call.
-          return;
-        }
-
-        if (childName.indexOf(graph.FUNCTION_LIBRARY_NODE_PREFIX) === 0) {
-          // Do not replace library functions in the graph. The library
-          // functions serve as templates for other nodes.
-          return;
-        }
-
-        // We later replace the node that is a function call with a copy of the
-        // function metagraph. We do not do so now because we are also looping
-        // through all the nodes.
-        const clonedMetanode = this.cloneFunctionLibraryMetanode(
-            metagraph,
-            originalNode,
-            libraryFunctionData.node,
-            libraryFunctionData.node.name,
-            originalNode.name);
-        nodesThatGotCloned.push(originalNode);
-        functionCallMetanodesToAdd.push(clonedMetanode);
-      });
-
-      // Perform node replacement.
-      _.each(functionCallMetanodesToAdd, (clonedMetanode, i) => {
-        const originalNode = nodesThatGotCloned[i];
-        clonedMetanode.parentNode = originalNode.parentNode;
-        metagraph.setNode(originalNode.name, clonedMetanode);
-        this.hierarchy.setNode(originalNode.name, clonedMetanode);
-      });
-    }
+     
 
     // Create render nodes to represent each child from the metagraph. Although
     // these will initially be added to the coreGraph, they may later be
@@ -892,238 +852,16 @@ export class RenderGraphInfo {
       extractHighDegrees(renderGroupNodeInfo);
     }
 
-    // If there are functions, it is possible for metanodes to be dynamically
-    // added later. Construct the hierarchies for nodes that are predecessors to
-    // nodes in the current hierarchy so that edges are drawn correctly.
-    if (!_.isEmpty(this.hierarchy.libraryFunctions)) {
-      this.buildSubhierarchiesForNeededFunctions(metagraph);
-    }
-
-    if (nodeName === graph.ROOT_NAME) {
-      // Add all metanodes representing library function templates into the
-      // library function scene group for the root node.
-      _.forOwn(
-          this.hierarchy.libraryFunctions,
-          (libraryFunctionData, functionName) => {
-        const node = libraryFunctionData.node;
-        const childRenderInfo = this.getOrCreateRenderNodeByName(node.name);
-        renderGroupNodeInfo.libraryFunctionsExtract.push(childRenderInfo);
-
-        // Do not render function definitions in the core graph.
-        childRenderInfo.node.include = InclusionType.EXCLUDE;
-        coreGraph.removeNode(node.name);
-      });
-    }
-
     // Look up the parent node's render information and short circuit if none.
     let parentNode = renderGroupNodeInfo.node.parentNode;
     if (!parentNode) {
       return;
     }
     
-
-    // Utility function for computing the name of a bridge node.
-    let getBridgeNodeName = (inbound, ...rest) =>
-        rest.concat([inbound ? 'IN' : 'OUT']).join('~~');
-
-    // Build out the bridgegraph.
-    // let bridgegraph = this.hierarchy.getBridgegraph(nodeName);
-
-    // Look for popular nodes so we can make annotations instead of paths.
-    let otherCounts = {
-      // Counts of edges coming INTO other nodes by name (outgoing from self).
-      in: <{[nodeName: string]: number}> {},
-      // Counts of edges going OUT from other nodes by name (coming into self).
-      out: <{[nodeName: string]: number}> {},
-      // Counts of all control edges involving other nodes by name.
-      control: <{[nodeName: string]: number}> {},
-    };
-    
-    // _.each(bridgegraph!.edges(), e => {
-    //   // An edge is inbound if its destination node is in the metagraph.
-    //   let inbound = !!metagraph.node(e.w);
-    //   let otherName = inbound ? e.v : e.w;
-    //   let metaedge = bridgegraph!.edge(e);
-    //   if (!metaedge.numRegularEdges) {
-    //     otherCounts.control[otherName] =
-    //       (otherCounts.control[otherName] || 0) + 1;
-    //   } else if (inbound) {
-    //     otherCounts.out[otherName] = (otherCounts.out[otherName] || 0) + 1;
-    //   } else {
-    //     otherCounts.in[otherName] = (otherCounts.in[otherName] || 0) + 1;
-    //   }
-    // });
-
-    // Add annotations and edges for bridgegraph relationships.
-    let hierarchyNodeMap = this.hierarchy.getNodeMap();
  
-
-    // For each bridge container (IN and/or OUT), add structural edges between
-    // terminal nodes and that container. A terminal node is one which has no
-    // non-bridge edges in the direction of the container.
-    //
-    // For example, consider a Metanode A which contains two child nodes A/B
-    // and A/C. Let's say it has one edge in the metagraph from A/B->A/C, and
-    // one edge in the bridgegraph from Z->A/C.
-    //
-    // At this point, we've added a container bridge node IN to house all
-    // incoming bridge nodes. We've also added a bridge node Z' (with parent IN)
-    // to A, and a bridge edge from Z'->C.
-    //
-    //     +----------------------+
-    //     | A          +---+     |
-    //     |    +------>| C |     |
-    //     |    |       +---+     |
-    //     |    |         ^       |
-    //     |    |         |       |
-    //     |    |    +----|----+  |
-    //     |    |    | IN |    |  |
-    //     |  +---+  |  +---+  |  |
-    //     |  | B |  |  | Z'|  |  |
-    //     |  +---+  |  +---+  |  |
-    //     |         +---------+  |
-    //     +----------------------+
-    //
-    // With no other help, dagre would lay out B and Z' on the same level,
-    // because both of them have no incoming edges. In other words, B is a
-    // terminal node in the INCOMING direction.
-    //
-    // But we want to force dagre to lay out Z' (and everything in IN) lower
-    // than all non-bridge nodes, so that there's enough room for the bridge
-    // edges after they've been adjusted to meet up with paths coming in from
-    // outside.
-    //
-    // To force Z' (and all other bridge nodes) to be lowest in the graph, we
-    // identify terminal nodes like B and give them structural edges to
-    // a new structural bridge node S which we add to IN.
-    //
-    //     +----------------------+
-    //     | A          +---+     |
-    //     |       +--->| C |     |
-    //     |       |    +---+     |
-    //     |     +---+    ^       |
-    //     |     | B |    |       |
-    //     |     +---+    |       |
-    //     |       ^      |       |
-    //     |       |      |       |
-    //     |  +----|------|----+  |
-    //     |  |IN  |      |    |  |
-    //     |  |  +---+  +---+  |  |
-    //     |  |  | S |  | Z'|  |  |
-    //     |  |  +---+  +---+  |  |
-    //     |  +----------------+  |
-    //     +----------------------+
-    //
-    // This ensures that dagre will lay out the bridge containers strictly at
-    // the ends of the graph. The structural edges will never be seen in the
-    // visualization except as a debugging aid.
-    _.each([true, false], inbound => {
-      let bridgeContainerName = getBridgeNodeName(inbound, nodeName);
-      let bridgeContainerInfo = coreGraph.node(bridgeContainerName);
-      if (!bridgeContainerInfo) {
-        return;
-      }
-      _.each(coreGraph.nodes(), childName => {
-        // Short-circuit if this child is a bridge node or it's not a terminal
-        // node in the direction we're interested in.
-        let childNodeInfo = coreGraph.node(childName);
-        if (childNodeInfo.node.type === NodeType.BRIDGE) {
-          return;
-        }
-        let isTerminal = inbound ?
-          !coreGraph.predecessors(childName).length :
-          !coreGraph.successors(childName).length;
-        if (!isTerminal) {
-          return;
-        }
-
-        // Find or create a bridge node in the container for all structural
-        // metaedges. It would have been nice to skip this step and simply
-        // set a metaedge between the terminal node and the container node, but
-        // in that case, something about the graph upsets dagre.layout()'s
-        // longestPath algorithm (was getting errors due to an undefined).
-        let structuralNodeName =
-            getBridgeNodeName(inbound, nodeName, 'STRUCTURAL_TARGET');
-        let structuralRenderInfo = coreGraph.node(structuralNodeName);
-        if (!structuralRenderInfo) {
-          let bridgeNode: BridgeNode = {
-            // Important Node properties.
-            name: structuralNodeName,
-            type: NodeType.BRIDGE,
-            // Unimportant Node properties.
-            isGroupNode: false,
-            cardinality: 1,
-            parentNode: null,
-            include: InclusionType.UNSPECIFIED,
-            // BridgeNode properties.
-            inbound: inbound,
-            nodeAttributes: {},
-          };
-          structuralRenderInfo = new RenderNodeInfo(bridgeNode);
-          structuralRenderInfo.structural = true;
-          this.index[structuralNodeName] = structuralRenderInfo;
-          coreGraph.setNode(structuralNodeName, structuralRenderInfo);
-          bridgeContainerInfo.node.cardinality++;
-          coreGraph.setParent(structuralNodeName, bridgeContainerName);
-        }
-
-        // Create the structural Metaedge and insert it.
-        let structuralMetaedgeInfo = new RenderMetaedgeInfo(null);
-        structuralMetaedgeInfo.structural = true;
-        structuralMetaedgeInfo.weight--; // Reduce weight for dagre layout.
-        inbound ?
-          coreGraph.setEdge(
-              structuralNodeName, childName, structuralMetaedgeInfo) :
-          coreGraph.setEdge(
-              childName, structuralNodeName, structuralMetaedgeInfo);
-      });
-    });
   }
 
-  /**
-   * This method builds subhierarchies for function calls that are needed for
-   * rendering edges in the current subhierarchy being built.
-   *
-   * When building subhierarchies for a metagraph M, the subhierarchies of
-   * metanodes containing endpoint nodes for edges within metagraph M must
-   * already be built. Otherwise, bridge edges will be missing from the graph.
-   */
-  private buildSubhierarchiesForNeededFunctions(
-    metagraph: graphlib.Graph<GroupNode|OpNode, Metaedge>) {
-      _.each(metagraph.edges(), edgeObj => {
-      let metaedge = metagraph.edge(edgeObj);
-      let renderMetaedgeInfo = new RenderMetaedgeInfo(metaedge);
-      _.forEach(renderMetaedgeInfo.metaedge.baseEdgeList,
-          baseEdge => {
-        const sourcePathList = baseEdge.v.split(graph.NAMESPACE_DELIM);
-
-        for (let i = sourcePathList.length; i >= 0; i--) {
-          const fromBeginningPathList = sourcePathList.slice(0, i);
-          const node = this.hierarchy.node(
-              fromBeginningPathList.join(graph.NAMESPACE_DELIM));
-          if (node) {
-            if (node.type === NodeType.OP &&
-                this.hierarchy.libraryFunctions[(node as OpNode).op]) {
-              for (let j = 1; j < fromBeginningPathList.length; j++) {
-                // Expand all hierarchies including the parent.
-                const currentNodeName = fromBeginningPathList
-                    .slice(0, j).join(graph.NAMESPACE_DELIM);
-                if (!currentNodeName) {
-                  continue;
-                }
-
-                // Build the hierarchy for this current level.
-                this.buildSubhierarchy(currentNodeName);
-              }
-            }
-
-            // No need to analyze the other higher hierarchies.
-            break;
-          }
-        }
-      });
-    });
-  }
+   
 }
 
 /**
@@ -1454,14 +1192,7 @@ export class RenderNodeInfo {
         // The display name had been successfully extracted. This is the most
         // common scenario.
         this.displayName = match[1];
-      } else if (_.startsWith(
-          this.displayName, graph.FUNCTION_LIBRARY_NODE_PREFIX)) {
-        // The string does not match the usual pattern for how functions are
-        // named. Just use the entire second portion of the string as the name
-        // if we can successfully remove the prefix.
-        this.displayName = this.displayName.substring(
-            graph.FUNCTION_LIBRARY_NODE_PREFIX.length);
-      }
+      }  
     }
   }
 
@@ -1739,8 +1470,7 @@ function extractSpecifiedNodes(renderNode: RenderGroupNodeInfo) {
   let graph = renderNode.coreGraph;
   _.each(graph.nodes(), n => {
     let renderInfo = graph.node(n);
-    if (renderInfo.node.include === InclusionType.EXCLUDE &&
-        !n.startsWith(FUNCTION_LIBRARY_NODE_PREFIX)) {
+    if (renderInfo.node.include === InclusionType.EXCLUDE) {
       // Move the node if the node is excluded and not part of the library
       // function scene group, which contains nodes that do not represent ops in
       // the graph and should thus never have its nodes added to the core graph.

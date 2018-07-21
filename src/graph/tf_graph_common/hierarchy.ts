@@ -22,7 +22,7 @@ import * as d3 from 'd3';
 import * as graph from './graph';
 import * as util from './util';
 import { ProgressTracker } from './common';
-import { SeriesNode, Metaedge, OpNode, GroupNode, getSeriesNodeName, createSeriesNode, Metanode, SlimGraph, NodeType, SeriesGroupingType, FUNCTION_LIBRARY_NODE_PREFIX, ROOT_NAME, createMetanode, MetaedgeImpl, GraphType, createGraph, createMetaedge, getHierarchicalPath, Node } from './graph';
+import { SeriesNode, Metaedge, OpNode, GroupNode, getSeriesNodeName, createSeriesNode, Metanode, SlimGraph, NodeType, SeriesGroupingType, ROOT_NAME, createMetanode, MetaedgeImpl, createMetaedge, getHierarchicalPath, Node } from './graph';
 import { StepStats } from './proto';
  
 
@@ -556,25 +556,7 @@ function addNodes(h: Hierarchy, graph: SlimGraph) {
         h.setNode(name, child);
         parent.metagraph.setNode(name, child);
 
-        if (name.indexOf( FUNCTION_LIBRARY_NODE_PREFIX) === 0 &&
-            parent.name ===  ROOT_NAME) {
-          // This metanode represents a function in the Library. We later copy
-          // its contents to dynamically inject function data into the graph
-          // when the subhierarchy of a metanode is built (upon its expansion).
-          const functionName = name.substring(
-               FUNCTION_LIBRARY_NODE_PREFIX.length);
-
-          // For now, remember the metanode that represents the function with
-          // this name.
-          if (!opToNode[functionName]) {
-            opToNode[functionName] = [];
-          }
-          h.libraryFunctions[functionName] = {
-            node: child,
-            usages: opToNode[functionName],
-          };
-          child.associatedFunction = functionName;
-        }
+         
       }
       parent = child;
     }

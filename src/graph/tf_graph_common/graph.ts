@@ -32,7 +32,7 @@ import { ProgressTracker } from './common';
 /** Delimiter used in node names to denote namespaces. */
 export const NAMESPACE_DELIM = '/';
 export const ROOT_NAME = '__root__';
-export const FUNCTION_LIBRARY_NODE_PREFIX = '__function_library__';
+ 
 
 /** Attribute key used for storing attributes that are too large. */
 export const LARGE_ATTRS_KEY = '_too_large_attrs';

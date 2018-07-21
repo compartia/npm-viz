@@ -472,19 +472,7 @@ export class GraphScene extends Polymer.Element {
             node.stylize(_svg, nodeGroup, _node, this);
         }
 
-        if (_node.node.type === graph.NodeType.META &&
-            (_node.node as graph.Metanode).associatedFunction &&
-            !_node.isLibraryFunction) {
-            // The node is that of a function call. Also link the node within the
-            // function library. This clarifies to the user that the library function
-            // is being used.
-            var libraryFunctionNodeName = graph.FUNCTION_LIBRARY_NODE_PREFIX +
-                (_node.node as graph.Metanode).associatedFunction;
-            var functionGroup = _svg.select('.' + scene.Class.Scene.GROUP + '>.' +
-                scene.Class.Scene.FUNCTION_LIBRARY + ' g[data-name="' +
-                libraryFunctionNodeName + '"]');
-            node.stylize(_svg, functionGroup, _node, this);
-        }
+         
 
         var annotationGroupIndex = this.getAnnotationGroupsIndex(n);
         _.each(annotationGroupIndex, (aGroup, hostName) => {
