@@ -333,13 +333,7 @@ export class RenderGraphInfo {
     this.index[nodeName] = renderInfo;
     this.renderedOpNames.push(nodeName);
 
-    renderInfo.cardinalityColor = this.cardinalityScale(node.cardinality);
-
-    if (node.stats) {       
-      
-      renderInfo.computeTimeColor =
-          this.computeTimeScale!(node.stats.getTotalMicros());
-    }
+    renderInfo.cardinalityColor = this.cardinalityScale(node.cardinality);    
 
     if (!node.isGroupNode) {
       let clusterName = (node as OpNode).xlaCluster;
@@ -349,8 +343,7 @@ export class RenderGraphInfo {
     }
 
     // We only fade nodes when we're displaying stats.
-    renderInfo.isFadedOut = this.displayingStats &&
-        !util.hasDisplayableNodeStats(node.stats);
+    renderInfo.isFadedOut = this.displayingStats;
 
     if (node.isGroupNode) {
       // Make a list of tuples (device, proportion), where proportion
@@ -927,8 +920,7 @@ export class RenderGraphInfo {
     if (!parentNode) {
       return;
     }
-    let parentNodeInfo =
-      <RenderGroupNodeInfo> this.index[parentNode.name];
+    
 
     // Utility function for computing the name of a bridge node.
     let getBridgeNodeName = (inbound, ...rest) =>
@@ -1062,7 +1054,6 @@ export class RenderGraphInfo {
             isGroupNode: false,
             cardinality: 1,
             parentNode: null,
-            stats: null,
             include: InclusionType.UNSPECIFIED,
             // BridgeNode properties.
             inbound: inbound,

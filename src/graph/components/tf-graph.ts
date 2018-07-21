@@ -180,7 +180,6 @@ export class TfGraphElement extends Polymer.Element {
   private _statsChanged(stats, devicesForStats) {
     if (this.graphHierarchy) {
       if (stats && devicesForStats) {
-        graph.joinStatsInfoWithGraph(this.basicGraph, stats, devicesForStats);
         joinAndAggregateStats(this.graphHierarchy, stats);
       }
       // Recompute the rendering information.

@@ -20,10 +20,9 @@ import * as graphlib from 'graphlib';
 import * as _ from "lodash";
 import * as d3 from 'd3';
 import * as graph from './graph';
-import * as template from './template';
 import * as util from './util';
 import { ProgressTracker } from './common';
-import { SeriesNode, Metaedge, OpNode, GroupNode, getSeriesNodeName, createSeriesNode, Metanode, NodeStats, SlimGraph, NodeType, SeriesGroupingType, FUNCTION_LIBRARY_NODE_PREFIX, ROOT_NAME, createMetanode, MetaedgeImpl, GraphType, createGraph, createMetaedge, getHierarchicalPath, Node } from './graph';
+import { SeriesNode, Metaedge, OpNode, GroupNode, getSeriesNodeName, createSeriesNode, Metanode, SlimGraph, NodeType, SeriesGroupingType, FUNCTION_LIBRARY_NODE_PREFIX, ROOT_NAME, createMetanode, MetaedgeImpl, GraphType, createGraph, createMetaedge, getHierarchicalPath, Node } from './graph';
 import { StepStats } from './proto';
  
 
@@ -417,7 +416,6 @@ export function joinAndAggregateStats(
   // Reset stats for each group node.
   _.each(h.getNodeMap(), (node, nodeName) => {
     if (node.isGroupNode) {
-      node.stats = new NodeStats([]);
       (<GroupNode>node).deviceHistogram = {};
     }
   });
@@ -430,9 +428,6 @@ export function joinAndAggregateStats(
       if (leaf.device != null) {
         let deviceHistogram = (<GroupNode>node.parentNode).deviceHistogram;
         deviceHistogram[leaf.device] = (deviceHistogram[leaf.device] || 0) + 1;
-      }
-      if (leaf.stats != null) {
-        node.parentNode.stats.combine(leaf.stats);
       }
       node = <GroupNode> node.parentNode;
     }
