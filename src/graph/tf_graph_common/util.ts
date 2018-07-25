@@ -14,7 +14,6 @@ limitations under the License.
 ==============================================================================*/
 
 
-import {NodeStats} from './graph'
 import { ProgressTracker } from "./common";
 import * as _ from 'lodash';
 /**
@@ -53,7 +52,7 @@ import * as _ from 'lodash';
       updateProgress: function(value:number) {
         polymerComponent.set('progress', {
           value: polymerComponent.progress.value + value,
-          msg: polymerComponent.progress.msg
+          msg: polymerComponent.progress.msg,          
         });
       },
       reportError: function(msg: string, err: Error) {
@@ -230,14 +229,6 @@ import * as _ from 'lodash';
     return (value.toPrecision(3) - 0) + ' ' + units[unitIndex].symbol;
   }
 
-  export function hasDisplayableNodeStats(stats: NodeStats) {
-    if (stats &&
-        (stats.totalBytes > 0 || stats.getTotalMicros() > 0 ||
-         stats.outputSize)) {
-      return true;
-    }
-    return false;
-  }
 
   /**
    * Given a list of strings, it returns a new list of strings with the longest

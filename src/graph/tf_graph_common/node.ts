@@ -19,7 +19,7 @@ import * as d3 from 'd3';
 import * as _ from 'lodash';
 import * as annotation from "./annotation";
 import * as contextmenu from "./contextmenu";
-import { BridgeNode, getGroupSeriesNodeButtonString, getIncludeNodeButtonString, getStrictName, GroupNode, Metanode, MetanodeImpl, Node, NodeType, OpNode, OpNodeImpl, ROOT_NAME, SeriesGroupingType, SeriesNode } from './graph';
+import { getGroupSeriesNodeButtonString, getIncludeNodeButtonString, getStrictName, GroupNode, Metanode, MetanodeImpl, Node, NodeType, OpNode, OpNodeImpl, ROOT_NAME, SeriesGroupingType, SeriesNode } from './graph';
 import * as layout from "./layout";
 import * as render from "./render";
 import * as scene from "./scene";
@@ -655,10 +655,6 @@ export function getFillForNode(_svg, templateIndex:Function, colorBy:any,
         // appear gray. Otherwise we're showing a stack of ellipses which we
         // want to show white.
         return isExpanded ? colorParams.EXPANDED_COLOR : 'white';
-      } else if (renderInfo.node.type === NodeType.BRIDGE) {
-        return renderInfo.structural ?
-            '#f0e' :
-            (<BridgeNode>renderInfo.node).inbound ? '#0ef' : '#fe0';
       } else if (_.isNumber((renderInfo.node as OpNode).functionInputIndex)) {
         // This is an input of a TensorFlow function.
         return '#795548';

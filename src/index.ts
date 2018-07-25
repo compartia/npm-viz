@@ -1,1 +1,1 @@
-import "./npm-deps-graph/npm-deps-graph"
+import "./app"

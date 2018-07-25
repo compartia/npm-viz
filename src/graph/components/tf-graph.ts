@@ -180,7 +180,6 @@ export class TfGraphElement extends Polymer.Element {
   private _statsChanged(stats, devicesForStats) {
     if (this.graphHierarchy) {
       if (stats && devicesForStats) {
-        graph.joinStatsInfoWithGraph(this.basicGraph, stats, devicesForStats);
         joinAndAggregateStats(this.graphHierarchy, stats);
       }
       // Recompute the rendering information.
@@ -223,14 +222,7 @@ export class TfGraphElement extends Polymer.Element {
             device: deviceName,
             color: renderGraph.deviceColorMap(deviceName)
           };
-        }),
-        xla_cluster: _.map(renderGraph.xlaClusterColorMap.domain(),
-            function(xlaClusterName) {
-          return {
-            xla_cluster: xlaClusterName,
-            color: renderGraph.xlaClusterColorMap(xlaClusterName)
-          };
-        }),
+        })         
       });
       (this as any)._setRenderHierarchy(renderGraph);
 
@@ -412,7 +404,8 @@ export class TfGraphElement extends Polymer.Element {
     // Rebuild the render hierarchy with the updated series grouping map.
     this.set('progress', {
       value: 0,
-      msg: ''
+      msg: '',
+      name: 'tf-graph'
     });
     var tracker = util.getTracker(this);
     var hierarchyTracker = util.getSubtaskTracker(tracker, 100,
