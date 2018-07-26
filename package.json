@@ -17,7 +17,9 @@
   "license": "ISC",
   "dependencies": {
     "ozone-api-request": "^3.0.0",
-    "reflect-metadata": "^0.1.12"
+    "reflect-metadata": "^0.1.12",
+    "three": "^0.94.0",
+    "three-addons": "^1.2.0"
   },
   "devDependencies": {
     "@polymer/gen-closure-declarations": "^0.4.0",
@@ -29,6 +31,7 @@
     "@types/lodash": "^4.14.110",
     "@types/reflect-metadata": "0.1.0",
     "@types/sinon": "^4.3.1",
+    "@types/three": "^0.92.14",
     "babel-loader": "^7.1.4",
     "babel-plugin-add-module-exports": "^0.2.1",
     "babel-plugin-transform-runtime": "^6.23.0",

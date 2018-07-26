@@ -124,9 +124,10 @@
         </div>
 
         <paper-tabs class="tabs" selected="{{selectedTab}}">
-          <paper-tab>Graph</paper-tab>
+          <paper-tab>Graph</paper-tab>          
           <paper-tab>Package.json</paper-tab>
           <paper-tab>Package-lock.json</paper-tab>
+          <paper-tab>3D</paper-tab>
         </paper-tabs>
 
         <div class="header-middle">
@@ -153,6 +154,7 @@
           <pre class="mono">[[_packageLockContents]]</pre>           
         </div>
 
+        <div><graph3d-scene id="scene3d" out-graph="[[_graph]]" ></graph3d-scene></div>
 
       </iron-pages>
     </div>
