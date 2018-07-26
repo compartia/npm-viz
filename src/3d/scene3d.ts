@@ -1,29 +1,31 @@
-import * as T from 'three'
+import * as THREE from 'three'
+import * as TA from 'three-addons'
+ 
 
 
 export abstract class SimpleScene {
-    scene: T.Scene;
-    renderer: T.WebGLRenderer;
-    camera: T.Camera;
+    scene: THREE.Scene;
+    renderer: THREE.WebGLRenderer;
+    camera: THREE.Camera;
 
     container: HTMLElement;
-    private light1: T.Light;
+    private light1: THREE.Light;
 
-    private controls: Controls;
+    controls: TA.OrbitControls;
     postprocessing: any;
 
     constructor(container: HTMLElement) {
-        this.container=container;
-        this.scene = new T.Scene()
+        this.container = container;
+        this.scene = new THREE.Scene()
 
-        let fogColor = new T.Color(0xcccccc);
+        let fogColor = new THREE.Color(0xcccccc);
 
         this.scene.background = fogColor;
-        this.scene.fog = new T.Fog(fogColor.getHex(), 0.025, 30);
+        this.scene.fog = new THREE.Fog(fogColor.getHex(), 0.025, 40);
 
 
 
-        let renderer = new T.WebGLRenderer()
+        let renderer = new THREE.WebGLRenderer()
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.gammaInput = true;
         renderer.gammaOutput = true;
@@ -42,7 +44,7 @@ export abstract class SimpleScene {
 
 
         // this.initPostprocessing();
-        // this.initControls(container);
+
         this.resetScene();
     }
 
@@ -60,22 +62,13 @@ export abstract class SimpleScene {
     }
 
 
-    private initControls(container: HTMLElement) {
-        this.controls = new Controls();
-        this.controls.mouseX = 0;
-        this.controls.mouseY = 0;
-        this.controls.windowHalfX = container.clientWidth / 2;
-        this.controls.windowHalfY = container.clientHeight / 2;
+    private initControls() {
+        this.controls = new TA.OrbitControls(this.camera, this.container);
 
-        container.addEventListener('mousemove', () => this.onDocumentMouseMove, false);
 
     }
 
-    private onDocumentMouseMove(event) {
-        console.log("onDocumentMouseMove");
-        this.controls.mouseX = (event.clientX - this.controls.windowHalfX) * 10;
-        this.controls.mouseY = (event.clientY - this.controls.windowHalfY) * 10;
-    }
+
 
     public abstract makeObjects();
 
@@ -83,23 +76,23 @@ export abstract class SimpleScene {
     private makeLights() {
         // add lights
         {
-            let light0 = new T.PointLight(0xff4444, 0.9)
+            let light0 = new THREE.PointLight(0xff4444, 0.9)
             light0.position.set(0, 0, 0)
             this.scene.add(light0);
 
         }
-        this.light1 = new T.DirectionalLight(0xee9955, 0.2)
+        this.light1 = new THREE.DirectionalLight(0xee9955, 0.2)
         this.light1.position.set(100, 100, 100)
         this.scene.add(this.light1);
 
-        let light2 = new T.DirectionalLight(0xffffff, 0.9)
+        let light2 = new THREE.DirectionalLight(0xffffff, 0.9)
         light2.position.set(-100, 100, -100)
         this.scene.add(light2)
     }
 
     private makeCamera() {
         // create the camera
-        this.camera = new T.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
         this.camera.position.x = 5
         this.camera.position.y = 5
@@ -108,20 +101,13 @@ export abstract class SimpleScene {
         this.camera.lookAt(this.scene.position);
         // this.camera.lookAt(<T.Vector3>{x:0,y:5,z:0});
 
+        this.initControls();
+
     }
 
 
     public abstract render(): void;
 
 
-
-
-
-}
-class Controls {
-    mouseY: number;
-    mouseX: number;
-    windowHalfX;
-    windowHalfY;
 
 }

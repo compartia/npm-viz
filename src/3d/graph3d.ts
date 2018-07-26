@@ -113,8 +113,8 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
 
         for (let name of names) {
-
-            let spritey = this.makeTextSprite(name,
+            let label = graph.nodes[name].nodeAttributes["label"];
+            let spritey = this.makeTextSprite(label,
                 { fontsize: 24, backgroundColor: { r: 255, g: 100, b: 100, a: 0.2 } });
             spritey.position.set(Math.random() * R - R2, Math.random() * R - R2, Math.random() * R - R2);
             this.scene.add(spritey);
@@ -136,17 +136,43 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
 
     private updateMesh() {
-        if (this.edges) {
-            for (let e of this.edges) {
-                let position: THREE.BufferAttribute = (e.line.geometry as THREE.BufferGeometry).attributes['position'] as THREE.BufferAttribute;
+        if (this.listNodes.length == 0) return;
+        if (this.listEdges.length == 0) return;
 
-                position.setXYZ( 0, e.a.pos.x, e.a.pos.y, e.a.pos.z );
-                position.setXYZ( 1, e.b.pos.x, e.b.pos.y, e.b.pos.z );
-                position.needsUpdate = true;
+        let min = this.listNodes[0].pos.clone();
+        let max = this.listNodes[0].pos.clone();
 
-                // e.line.geometry.ve
-            }
+        for (let e of this.listNodes) {
+            min.x = Math.min(min.x, e.pos.x);
+            min.y = Math.min(min.y, e.pos.y);
+            min.z = Math.min(min.z, e.pos.z);
+
+            max.x = Math.max(max.x, e.pos.x);
+            max.y = Math.max(max.y, e.pos.y);
+            max.z = Math.max(max.z, e.pos.z);
         }
+        for (let e of this.edges) {
+            let position: THREE.BufferAttribute = (e.line.geometry as THREE.BufferGeometry).attributes['position'] as THREE.BufferAttribute;
+
+            position.setXYZ(0, e.a.pos.x, e.a.pos.y, e.a.pos.z);
+            position.setXYZ(1, e.b.pos.x, e.b.pos.y, e.b.pos.z);
+            position.needsUpdate = true;
+
+
+            // e.line.geometry.ve
+        }
+
+
+        let mid = min.clone().add(max).divideScalar(2);
+        let size = max.clone().sub(min) ;
+        // this.camera.position.x=max.x;
+        // this.camera.position.y=max.y;
+        // this.camera.position.z=max.z;
+         this.camera.lookAt(mid);
+        this.camera.position.setLength(size.length()*0.6);
+
+        (this.scene.fog as any).far=size.length();
+        
     }
 
 
@@ -163,7 +189,7 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
         var points = curve.getPoints(50);
         var geometry = new THREE.BufferGeometry().setFromPoints(points);
 
-        var material = new THREE.LineBasicMaterial({ color: 0xff0000, fog: true });
+        var material = new THREE.LineBasicMaterial({ color: 0xff0000, fog: true, linewidth:4 });
 
         // Create the final object to add to the scene
         var curveObject = new THREE.Line(geometry, material);
@@ -186,15 +212,19 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
         // var points =[a.pos, b.pos];
         let geometry = new THREE.BufferGeometry();//.setFromPoints(points);
         // geometry.addAttribute( 'position', new THREE.BufferAttribute( points, 3 ) );
-        let mat = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors, color: 0xff0000, fog: true });
+        let mat = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors, fog: true, linewidth: 3  });
 
         let positions = [];
+        let colors = [];
         positions.push(a.pos.x, a.pos.y, a.pos.z);
         positions.push(b.pos.x, b.pos.y, b.pos.z);
 
+        colors.push( 1, 0.5, 0.5 );
+        colors.push( 0, 0, 0.5 );
 
         // geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( 3 ), 3 ) );
         geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
 
 
 
@@ -318,19 +348,21 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
         // this.molecule.Ĥ();
         // this.molecule.update(1);
 
-        this.updateMesh();
+        
 
 
         // this.camera.position.x += 0.1;//2 + 0.5 * Math.sin(timer)
         // this.camera.position.y += 0.2;//2 + 0.5 * Math.sin(timer)
         // this.camera.position.z += 0.1 * Math.sin(timer / 10)
 
-        this.camera.position.setLength(10);
-        this.camera.lookAt(this.scene.position);
+
+        // this.camera.lookAt(this.scene.position);
 
 
+        // this.camera.position.setLength(10);
+        this.renderer.render(this.scene, this.camera);
 
-        this.renderer.render(this.scene, this.camera)
+        this.controls.update();
         // this.postprocessing.composer.render( 0.1 );
 
     }

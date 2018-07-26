@@ -22,7 +22,7 @@ export class Relaxer {
         // repulsion
         for (let n1 of nodes.listNodes) {
             for (let n2 of nodes.listNodes) {
-                this.repulse(n1, n2, speed /20);
+                this.repulse(n1, n2, speed / 30);
             }
         }
 
@@ -39,18 +39,17 @@ export class Relaxer {
         }
 
     }
-    public repulse(e: Point, n: Point, k: number ) {
-        const MAX_LEN = 40;
-        const MAX_LEN_SQ = MAX_LEN*MAX_LEN;
-        const eps = MAX_LEN_SQ/10;
+    public repulse(e: Point, n: Point, k: number) {
+        const MAX_LEN = 10;
+        const MAX_LEN_SQ = MAX_LEN * MAX_LEN;
+        const eps = MAX_LEN_SQ / 10;
 
-        //k==1/2 for el-el an nuk-nuk because of symmetry
         if (e === n) return;
 
-        let rSquared =   e.pos.distanceToSquared(n.pos);
-        if (rSquared > MAX_LEN_SQ ) return;
+        let rSquared = e.pos.distanceToSquared(n.pos);
+        if (rSquared > MAX_LEN_SQ) return;
 
-        let attractionMagnitude =  k / rSquared;
+        let attractionMagnitude = k / rSquared;
 
         let f = e.pos.clone().sub(n.pos);
         f = f.normalize().multiplyScalar(attractionMagnitude);
@@ -59,23 +58,23 @@ export class Relaxer {
         // let force2 = f.clone();//.divideScalar(n.mass);
 
 
-        e.vel.add(f);    
+        e.vel.add(f);
         n.vel.sub(f);
 
     }
 
-    public e2eInteract(e: Point, n: Point, k: number ) {
-        const MAX_LEN = 3;
-        const MAX_LEN_SQ = MAX_LEN*MAX_LEN;
-        const eps = MAX_LEN_SQ/10;
+    public e2eInteract(e: Point, n: Point, k: number) {
+        const MAX_LEN = 2;
+        const MAX_LEN_SQ = MAX_LEN * MAX_LEN;
+        const eps = MAX_LEN_SQ / 10;
 
         //k==1/2 for el-el an nuk-nuk because of symmetry
         if (e === n) return;
 
-        let rSquared =  e.pos.distanceTo (n.pos)-MAX_LEN;
+        let rSquared = e.pos.distanceTo(n.pos) - MAX_LEN;
         // if (rSquared < MAX_LEN) return;
 
-        let attractionMagnitude = 0.002 * k * rSquared;
+        let attractionMagnitude = 0.02 * k * rSquared;
 
         let f = e.pos.clone().sub(n.pos);
         f = f.normalize().multiplyScalar(attractionMagnitude);
@@ -84,7 +83,7 @@ export class Relaxer {
         // let force2 = f.clone();//.divideScalar(n.mass);
 
 
-        e.vel.add(f);    
+        e.vel.add(f);
         n.vel.sub(f);
 
     }
