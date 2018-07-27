@@ -20,10 +20,9 @@ import * as graphlib from 'graphlib';
 import * as _ from "lodash";
 import * as d3 from 'd3';
 import * as graph from './graph';
-import * as template from './template';
 import * as util from './util';
 import { ProgressTracker } from './common';
-import { SeriesNode, Metaedge, OpNode, GroupNode, getSeriesNodeName, createSeriesNode, Metanode, NodeStats, SlimGraph, NodeType, SeriesGroupingType, FUNCTION_LIBRARY_NODE_PREFIX, ROOT_NAME, createMetanode, MetaedgeImpl, GraphType, createGraph, createMetaedge, getHierarchicalPath, Node } from './graph';
+import { SeriesNode, Metaedge, OpNode, GroupNode, getSeriesNodeName, createSeriesNode, Metanode, SlimGraph, NodeType, SeriesGroupingType, ROOT_NAME, createMetanode, MetaedgeImpl, createMetaedge, getHierarchicalPath, Node } from './graph';
 import { StepStats } from './proto';
  
 
@@ -51,12 +50,8 @@ export interface LibraryFunctionData {
 
 export interface Hierarchy {
   root: Metanode;
-  libraryFunctions: {[key: string]: LibraryFunctionData};
-  templates: {[templateId: string]: string[]};
   /** List of all device names */
   devices: string[];
-  /** List of all XLA cluster names */
-  xlaClusters: string[];
   /** True if at least one tensor in the graph has shape information */
   hasShapeInfo: boolean;
   /** The maximum size across all meta edges. Used for scaling thickness. */
@@ -68,20 +63,17 @@ export interface Hierarchy {
   // getBridgegraph(nodeName: string): graphlib.Graph<GroupNode|OpNode, Metaedge> | null;
   getPredecessors(nodeName: string): Edges;
   getSuccessors(nodeName: string): Edges;
-  getTopologicalOrdering(nodeName: string): { [childName: string]: number } | null;
-  getTemplateIndex(): (string:string) => number;
+  getTopologicalOrdering(nodeName: string): { [childName: string]: number } | null;  
 }
 
 /**
  * Class for the Graph Hierarchy for TensorFlow graph.
  */
 class HierarchyImpl implements Hierarchy {
-  root: Metanode;
-  libraryFunctions: {[key: string]: LibraryFunctionData};
-  templates: {[templateId: string]: string[]};
+  root: Metanode;  
   private index: {[nodeName: string]: GroupNode|OpNode};
   devices: string[];
-  xlaClusters: string[];
+   
   hasShapeInfo = false;
   maxMetaEdgeSize = 1;
   orderings: { [nodeName: string]: { [childName: string]: number } };
@@ -96,10 +88,7 @@ class HierarchyImpl implements Hierarchy {
     this.graphOptions = graphOptions || {};
     this.graphOptions.compound = true;
     this.root = createMetanode(ROOT_NAME, this.graphOptions);
-    this.libraryFunctions = {};
-    this.templates = {};
     this.devices = [];
-    this.xlaClusters=[];
     /**
      * @type {Object} Dictionary object that maps node name to the node
      * (could be op-node, metanode, or series-node)
@@ -302,18 +291,7 @@ class HierarchyImpl implements Hierarchy {
     }
     return ordering;
   }
-
-  /**
-   * Returns a d3 Ordinal function that can be used to look up the index of
-   * a node based on its template id.
-   */
-  getTemplateIndex(): (string:string) => number {
-    let templateNames = d3.keys(this.templates);
-    let templateIndex = d3.scaleOrdinal()
-        .domain(templateNames)
-        .range(d3.range(0, templateNames.length));
-    return (templateId: string) => <number>templateIndex(templateId);
-  }
+ 
 }
 
 /**
@@ -362,28 +340,24 @@ export interface HierarchyParams {
  */
 export function build(graph:  SlimGraph, params: HierarchyParams,
     tracker: ProgressTracker): Promise<Hierarchy|void> {
+
   let h = new HierarchyImpl({'rankdir': params.rankDirection});
   let seriesNames: { [name: string]: string } = {};
+  
   return util
       .runAsyncTask(
           'Adding nodes', 20,
           () => {
             // Get all the possible device and XLA cluster names.
             let deviceNames:{[key:string]:boolean} = {};
-            let xlaClusterNames:{[key:string]:boolean} = {};
             _.each(graph.nodes, (node, nodeName) => {
               if (node.device) {
                 deviceNames[node.device] = true;
               }
-
-              if (node.xlaCluster) {
-                xlaClusterNames[node.xlaCluster] = true;
-              }
             });
 
             h.devices = _.keys(deviceNames);
-            h.xlaClusters = _.keys(xlaClusterNames);
-
+ 
             addNodes(h, graph);
           },
           tracker)
@@ -397,16 +371,10 @@ export function build(graph:  SlimGraph, params: HierarchyParams,
         }, tracker);
       })
       .then(() => {
-        return util.runAsyncTask('Adding edges', 30, () => {
+        return util.runAsyncTask('Adding edges', 60, () => {
           addEdges(h, graph, seriesNames);
         }, tracker);
-      })
-      // .then(() => {
-      //   return util.runAsyncTask(
-      //       'Finding similar subgraphs', 30, () => {
-      //         h.templates = template.detect(h, params.verifyTemplate);
-      //       }, tracker);
-      // })
+      })  
       .then(() => {
         return h;
       });
@@ -427,7 +395,6 @@ export function joinAndAggregateStats(
   // Reset stats for each group node.
   _.each(h.getNodeMap(), (node, nodeName) => {
     if (node.isGroupNode) {
-      node.stats = new NodeStats([]);
       (<GroupNode>node).deviceHistogram = {};
     }
   });
@@ -440,9 +407,6 @@ export function joinAndAggregateStats(
       if (leaf.device != null) {
         let deviceHistogram = (<GroupNode>node.parentNode).deviceHistogram;
         deviceHistogram[leaf.device] = (deviceHistogram[leaf.device] || 0) + 1;
-      }
-      if (leaf.stats != null) {
-        node.parentNode.stats.combine(leaf.stats);
       }
       node = <GroupNode> node.parentNode;
     }
@@ -571,25 +535,7 @@ function addNodes(h: Hierarchy, graph: SlimGraph) {
         h.setNode(name, child);
         parent.metagraph.setNode(name, child);
 
-        if (name.indexOf( FUNCTION_LIBRARY_NODE_PREFIX) === 0 &&
-            parent.name ===  ROOT_NAME) {
-          // This metanode represents a function in the Library. We later copy
-          // its contents to dynamically inject function data into the graph
-          // when the subhierarchy of a metanode is built (upon its expansion).
-          const functionName = name.substring(
-               FUNCTION_LIBRARY_NODE_PREFIX.length);
-
-          // For now, remember the metanode that represents the function with
-          // this name.
-          if (!opToNode[functionName]) {
-            opToNode[functionName] = [];
-          }
-          h.libraryFunctions[functionName] = {
-            node: child,
-            usages: opToNode[functionName],
-          };
-          child.associatedFunction = functionName;
-        }
+         
       }
       parent = child;
     }

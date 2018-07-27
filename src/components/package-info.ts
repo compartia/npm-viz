@@ -1,4 +1,3 @@
-
 import "polymer/polymer.html";
 import { customElement, property } from 'taktik-polymer-typescript';
 import './package-info.html';
@@ -40,8 +39,10 @@ export class PackageInfo extends Polymer.Element {
     @property({
         type: Object
     })
-    graphHierarchy: Hierarchy;
+    graphHierarchy: Hierarchy; 
 
+    @property({ type: Object, notify: true })
+    progress: any;
 
     @property({ type: String })
     packageName: any;
@@ -63,6 +64,16 @@ export class PackageInfo extends Polymer.Element {
         'node-list-item-mouseover': '_nodeListItemMouseover',
         'node-list-item-mouseout': '_nodeListItemMouseout'
     };
+
+    public loadGraph() :void{
+        // this.fire
+        let detail = {
+            name: this.jsonLoaded.name,
+            version: this.jsonLoaded.version,
+        };
+        console.error("firing");
+        this.dispatchEvent(new CustomEvent("load-graph", { bubbles: true, detail: detail }));
+    }
 
     private _nodeListItemClicked(event) {
         this.selectedNode = event.detail.nodeName;
@@ -88,6 +99,8 @@ export class PackageInfo extends Polymer.Element {
             this.outputs = _.map((node as any).outputs, n => this.graphHierarchy.node(n.name));
             this.inputs = _.map((node as any).inputs, n => this.graphHierarchy.node(n.name));
 
+            this.progress.value = 0;
+            this.progress.indeterminate = true;
             this.$.apiRequest.generateRequest();
         } else {
             this.set("jsonLoaded", null);
@@ -101,12 +114,10 @@ export class PackageInfo extends Polymer.Element {
     public ready() {
         super.ready();
 
-
         _.toPairs(PackageInfo.listeners).forEach(pair => {
             let listener = (e) => {
                 this[pair[1]](e);
             }
-            console.error(pair[0]);
             window.addEventListener(pair[0], listener);
 
         });

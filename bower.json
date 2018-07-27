@@ -20,14 +20,18 @@
     "paper-expansion-panel": "Collaborne/paper-expansion-panel#^2.0.0",
     "paper-menu-button": "PolymerElements/paper-menu-button#^2.1.1",
     "paper-listbox": "PolymerElements/paper-listbox#^2.1.1",
-    "paper-button": "PolymerElements/paper-button#^2.1.1"
+    "paper-button": "PolymerElements/paper-button#^2.1.1",
+    "paper-input": "PolymerElements/paper-input#^2.2.3",
+    "paper-tabs": "PolymerElements/paper-tabs#^2.1.1",
+    "iron-pages": "PolymerElements/iron-pages#^2.1.1",
+    "paper-dropdown-menu": "PolymerElements/paper-dropdown-menu#^2.1.0",
+    "paper-progress": "PolymerElements/paper-progress#^2.1.1"
   },
   "devDependencies": {
     "web-component-tester": "^6.3.0"
   },
   "resolutions": {
     "polymer": "^2.0.0",
-    "webcomponentsjs": "^v1.1.0",
     "iron-flex-layout": "^2.0.3",
     "iron-resizable-behavior": "^2.0.0",
     "iron-icon": "^2.0.1",

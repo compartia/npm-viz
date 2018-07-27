@@ -33,6 +33,9 @@ export class TfGraphElement extends Polymer.Element {
   @property({ type: Object, notify: true, readOnly: true })
   renderHierarchy: render.RenderGraphInfo;
 
+  @property({ type: String, notify: true })
+  packageLockUrl:string = 'http://localhost:5000/package-lock/is-primitive/2.0.0';
+
   @property({ type: Object })
   stats: Object;
 
@@ -177,7 +180,6 @@ export class TfGraphElement extends Polymer.Element {
   private _statsChanged(stats, devicesForStats) {
     if (this.graphHierarchy) {
       if (stats && devicesForStats) {
-        graph.joinStatsInfoWithGraph(this.basicGraph, stats, devicesForStats);
         joinAndAggregateStats(this.graphHierarchy, stats);
       }
       // Recompute the rendering information.
@@ -220,14 +222,7 @@ export class TfGraphElement extends Polymer.Element {
             device: deviceName,
             color: renderGraph.deviceColorMap(deviceName)
           };
-        }),
-        xla_cluster: _.map(renderGraph.xlaClusterColorMap.domain(),
-            function(xlaClusterName) {
-          return {
-            xla_cluster: xlaClusterName,
-            color: renderGraph.xlaClusterColorMap(xlaClusterName)
-          };
-        }),
+        })         
       });
       (this as any)._setRenderHierarchy(renderGraph);
 
@@ -272,6 +267,9 @@ export class TfGraphElement extends Polymer.Element {
     'annotation-select': '_nodeSelected',
     'annotation-highlight': '_nodeHighlighted',
     'annotation-unhighlight': '_nodeUnhighlighted',
+
+    // 'load-graph': '_onLoadGraphEvent',
+    
   }
 
   private _graphChanged():void {
@@ -406,7 +404,8 @@ export class TfGraphElement extends Polymer.Element {
     // Rebuild the render hierarchy with the updated series grouping map.
     this.set('progress', {
       value: 0,
-      msg: ''
+      msg: '',
+      name: 'tf-graph'
     });
     var tracker = util.getTracker(this);
     var hierarchyTracker = util.getSubtaskTracker(tracker, 100,
@@ -466,9 +465,15 @@ export class TfGraphElement extends Polymer.Element {
     return !x;
   }
 
+  private _onLoadGraphEvent({detail}){
+    // console.error(event.detail);
+    this.packageLockUrl = `http://localhost:5000/package-lock/${detail.name}/${detail.version}`;
+  }
+
   public ready() {
     super.ready();
  
+    // (<HTMLElement>this.$.infoPanel).on
     _.toPairs(TfGraphElement.listeners).forEach(pair => {
       let listener = (e) => {
         //console.error(e);
