@@ -51,6 +51,10 @@ export class NodeDefExt implements NodeDef {
     nodeAttributes: { [key: string]: any; };
     resolved: boolean = true;
 
+    get degree():number{
+        return this._input.length + this._input.length;
+    }
+
     public isUnresolved() {
         return this.resolved;
     }
@@ -137,6 +141,7 @@ export class PackageLockGraph implements GraphDef {
         this.linkRequiremens();
         this.linkUnresolved();
         this.renameNodes();
+        this.isolateHighDegreeNodes();
     }
 
     private linkUnresolved() {
@@ -255,7 +260,14 @@ export class PackageLockGraph implements GraphDef {
 
 
 
-
+    private isolateHighDegreeNodes():void{
+        this.node.forEach(n => {
+            if(n.degree  >20){
+                // n.hidden=true;
+            }
+        }
+        )
+    }
 
     private renameNodes(): void {
         const renamingMap: { [key: string]: string; } = {};

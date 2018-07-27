@@ -1,5 +1,6 @@
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
 
 <dom-module id="package-info">
     <template>
@@ -10,6 +11,10 @@
                 padding: 3px;
                 margin: 3px;
                 display: inline-block;
+            }
+
+            .mono{
+                font-family: var(--mono);
             }
 
             .dependenciy {
@@ -49,22 +54,27 @@
 
             <section class="padding">
                 <!-- [[selectedNode.name]] Package: [[package.nodeAttributes.package]]/[[package.version]] -->
-                <h2> [[jsonLoaded.name]] [[jsonLoaded.version]]</h2>
-
-                <!-- [[jsonLoaded.keywords]] -->
-                <template is="dom-repeat" items="[[jsonLoaded.keywords]]">
-                    <div class="keyword">[[item]]</div>
-                </template>
+                <h2 class="mono"> [[jsonLoaded.name]] [[jsonLoaded.version]]</h2>
 
                 <paper-button raised on-tap="loadGraph">load graph</paper-button>
+
+             
+                
 
                 <!-- <template is="dom-repeat" items="[[jsonLoaded.dependencies]]">
                                     <div class="keyword">[[item]]</div>
                                 </template> -->
             </section>
-            <paper-expansion-panel class="panel-settings" header="Details">
+            <paper-expansion-panel class="panel-settings" header="Details" opened>
                     [[jsonLoaded.description]]<br>
                     [[jsonLoaded.repository.url]]
+
+                    <br>
+                       <!-- [[jsonLoaded.keywords]] -->
+                <template is="dom-repeat" items="[[jsonLoaded.keywords]]">
+                    <div class="keyword">[[item]]</div>
+                </template>
+
 
             </paper-expansion-panel>
 
@@ -102,10 +112,11 @@
                 background: var(--color-hover)
             }
 
+    
+           
 
-            .version,
-            .name {
-                font-family: monospace;
+            .mono{
+                font-family: var(--mono);
             }
 
             .name {
@@ -118,8 +129,8 @@
             }
         </style>
         <div class="dependenciy line" on-mouseover="_nodeListener" on-mouseout="_nodeListener" on-click="_nodeListener">
-            <span class="name">[[item.nodeAttributes.package]]</span>&nbsp;
-            <span class="version">[[item.nodeAttributes.version]]</span>
+            <span class="name mono">[[item.nodeAttributes.package]]</span>&nbsp;
+            <span class="version mono">[[item.nodeAttributes.version]]</span>
         </div>
     </template>
 </dom-module>

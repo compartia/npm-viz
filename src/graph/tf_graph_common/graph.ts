@@ -32,7 +32,7 @@ import { ProgressTracker } from './common';
 /** Delimiter used in node names to denote namespaces. */
 export const NAMESPACE_DELIM = '/';
 export const ROOT_NAME = '__root__';
-export const FUNCTION_LIBRARY_NODE_PREFIX = '__function_library__';
+ 
 
 /** Attribute key used for storing attributes that are too large. */
 export const LARGE_ATTRS_KEY = '_too_large_attrs';
@@ -55,11 +55,6 @@ export enum InclusionType {INCLUDE, EXCLUDE, UNSPECIFIED};
 /** Indicates if a series is to be grouped in the graph when rendered. */
 export enum SeriesGroupingType {GROUP, UNGROUP};
 
-/** Attribute key reserved for the shapes of the output tensors. */
-const OUTPUT_SHAPES_KEY = '_output_shapes';
-
-/** Attribute key reserved for the XLA cluster that an op runs on. */
-const _XLA_CLUSTER_KEY = '_XlaCluster';
 
 /**
  * A BaseEdge is the label object (in the graphlib sense) for an edge in the
@@ -131,8 +126,7 @@ export interface Node {
    * GroupNode because of embeddings, which will have a parent OpNode.
    */
   parentNode: Node;
-  /** Runtime execution stats for this node, if available */
-  stats: NodeStats;
+  
   /** If the node is to be included or excluded from the main graph when
    *  rendered. Defaults to UNSPECIFIED, which means that the rendering
    *  algorithm determines if it will be included or not. Then can be set to
@@ -163,9 +157,6 @@ export interface OpNode extends Node {
   owningSeries: string;
   
 
-  // The XLA Cluster on which the op ran. Null if it is unknown.
-  xlaCluster: string;
-
   // Whether op is compatible with its assigned device.  Currently, if an op
   // is not specified a device, the device is defaulted to the TPU.
   // Furthermore, all ops are considered compatible for CPU and GPU devices,
@@ -182,12 +173,6 @@ export interface OpNode extends Node {
   functionOutputIndex: number;
 }
 
-export interface BridgeNode extends Node {
-  /**
-   * Whether this bridge node represents edges coming into its parent node.
-   */
-  inbound: boolean;
-}
 
 /**
  * A node that is used when there are more than the maximum number of allowed
@@ -216,80 +201,7 @@ export interface GroupNode extends Node {
    * BaseEdge(s) from which it was created.
    */
   metagraph: graphlib.Graph<GroupNode|OpNode, Metaedge>;
-
-  /**
-   * The bridgegraph contains only edges which link immediate children of this
-   * group with nodes outside of the metagraph. As in the metagraph, all edge
-   * label objects are Metaedges which contain references to the original
-   * BaseEdge(s) that contribute to it.
-   *
-   * For a Metaedge in the bridgegraph, its external endpoint will be the same
-   * as the metagraph edge from which it came. This is most easily explained
-   * by example.
-   *
-   * Consider an original graph that contains a BaseEdge A/B/C->Z/Y/X.
-   *
-   *     +-------+    (BaseEdge)     +-------+
-   *     | A/B/C |>----------------->| Z/Y/X |
-   *     +-------+                   +-------+
-   *
-   * When we construct the Root's metagraph, it will contain nodes for A and Z,
-   * and a Metaedge A->Z. The A->Z Metaedge will contain the original BaseEdge
-   * A/B/C->Z/Y/X in its baseEdgeGraph. The Root's bridgegraph will always be
-   * empty.
-   *
-   *     +---+    (Root.metagraph edge)    +---+
-   *     | A |>--------------------------->| Z |
-   *     +---+                             +---+
-   *
-   * Now consider the Metanode A. Its metagraph will contain a Metanode for A/B
-   * and no edges. A's bridgegraph will have one Metaedge from A/B->Z, which
-   * was derived from the Root's Metaedge A->Z. That Metaedge will contain the
-   * original BaseEdge in its baseEdgeGraph.
-   *
-   *     +---------+
-   *     | A       |
-   *     |  +---+  |   (A.bridgegraph edge)    +---+
-   *     |  | B |>---------------------------->| Z |
-   *     |  +---+  |                           +---+
-   *     +---------+
-   *
-   * Finally, consider the Metanode A/B. Its metagraph will contain a Metanode
-   * for A/B/C and again no edges. A/B's bridgegraph will have one Metaedge
-   * from A/B/C->Z, which was derived from A's bridgegraph Metaedge A/B->Z.
-   * As before, the A/B/C->Z Metaedge will contain the original BaseEdge in its
-   * baseEdgeGraph.
-   *
-   *     +---------------+
-   *     | A             |
-   *     |  +---------+  |
-   *     |  | B       |  |
-   *     |  |  +---+  |  |   (A/B.bridgegraph edge)      +---+
-   *     |  |  | C |>----------------------------------->| Z |
-   *     |  |  +---+  |  |                               +---+
-   *     |  +---------+  |
-   *     +---------------+
-   *
-   * Likewise, under the Metanode Z and Z/Y, to compute the bridgegraph, we'll
-   * end up with Metaedges A->Z/Y and A->Z/Y/X respectively. So the original
-   * BaseEdge A/B/C->Z/Y/X becomes four different Metaedges in four different
-   * bridgegraphs:
-   *
-   *   + A/B->Z in GroupNode A's bridgegraph,
-   *   + A/B/C->Z in GroupNode A/B's bridgegraph,
-   *   + A->Z/Y in GroupNode Z's bridgegraph, and
-   *   + A->Z/Y/X in GroupNode Z/Y's bridgegraph.
-   *
-   * Considering any BaseEdge then, if N is the number of path segments in the
-   * source and M is the number of path segments in the destination, then the
-   * total number of bridgegraph edges you could create would be (N-1)(M-1).
-   *
-   * For this reason, it is computationally expensive to generate all the
-   * bridgegraphs for all the Metanodes, and instead they should be computed
-   * on demand as needed.
-   */
-  bridgegraph: graphlib.Graph<GroupNode|OpNode, Metaedge>;
-
+ 
   /**
    * Stores how many times each device name appears in its children
    * op nodes. Used to color group nodes by devices.
@@ -336,7 +248,6 @@ export interface SeriesNode extends GroupNode {
 export class EllipsisNodeImpl implements EllipsisNode {
   name: string;
   numMoreNodes: number;
-  stats: NodeStats;
   type: NodeType;
   isGroupNode: boolean;
   cardinality: number;
@@ -353,7 +264,6 @@ export class EllipsisNodeImpl implements EllipsisNode {
     this.isGroupNode = false;
     this.cardinality = 1;
     this.parentNode = null;
-    this.stats = null;
     this.setNumMoreNodes(numNodes);
     this.include = InclusionType.UNSPECIFIED;
   }
@@ -372,7 +282,7 @@ export class OpNodeImpl implements OpNode {
   name: string;
   op: string;
   device: string;
-  stats: NodeStats;
+
    
   inputs: NormalizedInput[];
   outputs: NormalizedInput[];
@@ -386,7 +296,7 @@ export class OpNodeImpl implements OpNode {
   include: InclusionType;
   owningSeries: string;  
   nodeAttributes: {[key: string]: any;};
-  xlaCluster: string;
+  
   compatible: boolean;
 
   // This field is only defined if the op node represents an input_arg to a
@@ -414,12 +324,11 @@ export class OpNodeImpl implements OpNode {
     this.inputs = normalizeInputs(rawNode.input);
     this.outputs = normalizeInputs(rawNode.output);
 
-    this.xlaCluster = extractXlaCluster(rawNode.nodeAttributes);
     this.compatible = false;
     // additional properties
     this.type = NodeType.OP;
     this.isGroupNode = false;
-    this.cardinality = 1;
+    this.cardinality = (rawNode as any).degree;
     this.inEmbeddings = [];
     this.outEmbeddings = [];
     this.parentNode = null;
@@ -432,150 +341,10 @@ export function createMetanode(name: string, opt = {}): Metanode {
   return new MetanodeImpl(name, opt);
 }
 
-/**
- * Joins the information from the stats file (memory, compute time) with the
- * graph information.
- */
-export function joinStatsInfoWithGraph(
-    graph: SlimGraph, stats: proto.StepStats,
-    devicesForStats?: {[device: string]: boolean}): void {
-  // Reset stats for each node.
-  _.each(graph.nodes, node => { node.stats = null; });
-
-  _.each(stats.dev_stats, devStats => {
-    // Ignore devices that are not selected.
-    if (devicesForStats && !devicesForStats[devStats.device]) {
-      return;
-    }
-    _.each(devStats.node_stats, nodeStats => {
-      // Lookup the node in the graph by its original name, e.g. A/B. If not
-      // found, lookup by the rewritten name A/B/(B) in case the name is both
-      // a namespace and a node name.
-      let nodeName = nodeStats.node_name in graph.nodes ?
-          nodeStats.node_name :
-          getStrictName(nodeStats.node_name);
-
-      // Couldn't find a matching node.
-      if (!(nodeName in graph.nodes)) {
-        return;
-      }
-
-      // Compute the total bytes used.
-      let totalBytes = 0;
-       
-      let outputSize: number[][] = null;
-      if (nodeStats.output) {
-        outputSize = _.map(nodeStats.output, output => {
-          return _.map(output.tensor_description.shape.dim,
-              dim => Number(dim.size));
-        });
-      }
-      graph.nodes[nodeName].device = devStats.device;
-      if (graph.nodes[nodeName].stats == null) {
-        graph.nodes[nodeName].stats = new NodeStats(outputSize);
-      }
-      graph.nodes[nodeName].stats.addBytesAllocation(totalBytes);
-      if (nodeStats.all_end_rel_micros) {
-        if (nodeStats.all_end_rel_micros > 0) {
-          graph.nodes[nodeName].stats.addExecutionTime(
-              nodeStats.all_start_micros,
-              nodeStats.all_start_micros + nodeStats.all_end_rel_micros);
-        } else {
-          /* tslint:disable */
-          console.log('ignoring negative runtime for ' + nodeName);
-          /* tslint:enable */
-        }
-      }
-    });
-  });
-}
-
-/**
- * Execution stats for the node.
- */
-export class NodeStats {
-  constructor(outputSize: number[][]) { this.outputSize = outputSize; }
-
-  /**
-   * Add the start and end time for a particular kernel execution of this op.
-   * Ops can have multiple kernel executions within the same session run.
-   */
-  addExecutionTime(startTime: number, endTime: number) {
-    if (this.startTime != null) {
-      this.startTime = Math.min(this.startTime, startTime);
-    } else {
-      this.startTime = startTime;
-    }
-    if (this.endTime != null) {
-      this.endTime = Math.max(this.endTime, endTime);
-    } else {
-      this.endTime = endTime;
-    }
-  }
-
-  /**
-   * Add the bytes allocated for a particular kernel execution of this op.
-   * Ops can have multiple kernel executions within the same session run.
-   */
-  addBytesAllocation(totalBytes: number) {
-    if (this.totalBytes != null) {
-      this.totalBytes = Math.max(this.totalBytes, totalBytes);
-    } else {
-      this.totalBytes = totalBytes;
-    }
-  }
-
-  /**
-   * Absolute start time for the very first kernel execution of this op.
-   */
-  startTime: number;
-  /**
-   * Absolute end time for the very last kernel execution of this op.
-   */
-  endTime: number;
-  /**
-   * Total number of bytes used for the node. Sum of all children
-   * if it is a Group node.
-   */
-  totalBytes = 0;
-
-  /**
-   * The shape of each output tensors, if there are any.
-   * Empty if it is a Group node.
-   */
-  outputSize: number[][];
-
-  /**
-   * Combines the specified stats with the current stats.
-   * Modifies the current object. This method is used to
-   * compute aggregate stats for group nodes.
-   */
-  combine(stats: NodeStats): void {
-    if (stats.totalBytes != null) {
-      this.totalBytes += stats.totalBytes;
-    }
-    if (stats.getTotalMicros() != null) {
-      this.addExecutionTime(stats.startTime, stats.endTime);
-    }
-  }
-
-  /**
-   * Total number of compute time in microseconds used for the node.
-   * Sum of all children if it is a Group node. Null if it is unknown.
-   * This method can not be scaffolded under a getter attribute because
-   * ECMAScript 5 does not support getter attributes.
-   */
-  getTotalMicros(): number {
-    if (this.startTime == null || this.endTime == null) {
-      return null;
-    }
-    return this.endTime - this.startTime;
-  }
-}
+ 
 
 export class MetanodeImpl implements Metanode {
   name: string;
-  stats: NodeStats;
   type: NodeType;
   depth: number;
   isGroupNode: boolean;
@@ -786,7 +555,6 @@ export function getSeriesNodeName(prefix: string, suffix: string,
 class SeriesNodeImpl implements SeriesNode {
   name: string;
   type: NodeType;
-  stats: NodeStats;
   hasLoop: boolean;
   prefix: string;
   suffix: string;
@@ -833,27 +601,7 @@ class SeriesNodeImpl implements SeriesNode {
   }
 }
  
-
-/**
- * Extracts the XLA Cluster that an op runs on from the attrs of the OpNode.
- * @param attr The attr property.
- * @return A string that is the name of the cluster. Or null if it could not be
- *     determined.
- */
-// tslint:disable-next-line:no-any
-function extractXlaCluster(attr: {[key: string]: any;}): string | null {
-  if (!attr) {
-    return null;
-  }
-
-  // // Find the attribute for XLA cluster if there is one.
-  // for (let i = 0; i < attr.length; i++) {
-  //   if (attr[i].key === _XLA_CLUSTER_KEY) {
-  //     return attr[i].value['s'] || null;
-  //   }
-  // }
-  return null;
-}
+ 
 
 /**
  * Normalizes the inputs and extracts associated metadata:
@@ -942,8 +690,7 @@ export function build(
    * out-embedding node label objects.
    */
   let outEmbeddings: {[inputName: string]: OpNode[]} = {};
-  let isInEmbeddedPred = getEmbedPredicate(params.inEmbeddingTypes);
-  let isOutEmbeddedPred = getEmbedPredicate(params.outEmbeddingTypes);
+  
   let embeddingNodeNames: string[] = [];
   let rawNodes = graphDef.node;
   /**
@@ -963,207 +710,61 @@ export function build(
             let opNodes = new Array<OpNode>(rawNodes.length);
             let index = 0;
 
-            const processRawNode = rawNode => {
+            const processRawNode = (rawNode: proto.NodeDef) => {
               let opNode = new OpNodeImpl(rawNode);
-              if (isInEmbeddedPred(opNode)) {
-                embeddingNodeNames.push(opNode.name);
-                inEmbedding[opNode.name] = opNode;
-                return opNode;
-              }
 
-              if (isOutEmbeddedPred(opNode)) {
-                embeddingNodeNames.push(opNode.name);
-                outEmbedding[opNode.name] = opNode;
-                _.each(opNode.inputs, input => {
-                  let inputName = input.name;
-                  outEmbeddings[inputName] = outEmbeddings[inputName] || [];
-                  outEmbeddings[inputName].push(opNode);
-                });
-                return opNode;
+              if ((rawNode as any).degree > 5) {
+                opNode.include=InclusionType.EXCLUDE;
               }
-              // The node is not an embedding, so add it to the names and nodes
-              // lists.
               opNodes[index] = opNode;
               nodeNames[index] = opNode.name;
+              
               index++;
               return opNode;
+                   
             };
-
-            _.each(rawNodes, processRawNode);
-
-            const processFunction = (func: proto.FunctionDef) => {
-              // Give the function itself a node.
-              const functionNodeName =
-                  FUNCTION_LIBRARY_NODE_PREFIX + func.signature.name;
-              // Create an op node for the function. Mark it as part of a
-              // function library.
-              processRawNode({
-                name: functionNodeName,
-                input: [],
-                device: '',
-                op: '',
-                attr: [],
-              });
-
-              // If the function has inputs, make nodes out of them.
-              if (func.signature.input_arg) {
-                // Makes an OpNode out of either an input_arg of a library
-                // function.
-                let currentInputIndex = 0;
-                const processInput = (arg) => {
-                  const opNode = processRawNode({
-                    name: functionNodeName + NAMESPACE_DELIM + arg.name,
-                    input: [],
-                    device: '',
-                    op: 'input_arg',
-                    attr: [{
-                      key: 'T',
-                      value: {
-                        type: arg.type,
-                      },
-                    }],
-                  });
-                  opNode.functionInputIndex = currentInputIndex;
-                  currentInputIndex++;
-                };
-
-                // Make nodes for input args of the function. Unfortunately, the
-                // pbtxt configuration language is not rich enough to
-                // differentiate between an array with 1 item vs 1 object
-                // property.
-                if (func.signature.input_arg['name']) {
-                  // There is only 1 input arg.
-                  processInput(func.signature.input_arg);
-                } else {
-                  // There are several input args.
-                  _.each(func.signature.input_arg, processInput);
-                }
-              }
-
-              // Make nodes for output args of the function. Track the names of
-              // output args within the keys of this object. Unlike the
-              // input_args, the output_args are already defined within the
-              // node_defs of the library function.
-              let currentOutputIndex = 0;
-              const outputArgNames = {};
-
-              // If the function has outputs, make nodes out of them.
-              if (func.signature.output_arg) {
-                const processOutput = arg => {
-                  outputArgNames[
-                      functionNodeName + NAMESPACE_DELIM + arg.name] =
-                          currentOutputIndex;
-                  currentOutputIndex++;
-                };
-                if (func.signature.output_arg['name']) {
-                  // There is only 1 output arg.
-                  processOutput(func.signature.output_arg);
-                } else {
-                  // There are several output args.
-                  _.each(func.signature.output_arg, processOutput);
-                }
-              }
-
-              _.each(func.node_def, rawNode => {
-                // Prefix with the name of the function so that the graph
-                // correctly computes the hierarchy (and makes metanodes).
-                rawNode.name = functionNodeName + '/' + rawNode.name;
-                if (typeof rawNode.input === 'string') {
-                  rawNode.input = [rawNode.input];
-                }
-                const opNode = processRawNode(rawNode);
-                if (_.isNumber(outputArgNames[rawNode.name])) {
-                  // Mark the node as one of the outputs of the function.
-                  opNode.functionOutputIndex = outputArgNames[rawNode.name];
-                }
-
-                _.each(opNode.inputs, normalizedInput => {
-                  normalizedInput.name =
-                      functionNodeName + NAMESPACE_DELIM + normalizedInput.name;
-                });
-              });
-            };
-
-            if (graphDef.library && graphDef.library.function) {
-              // This graph contains functions.
-              _.each(graphDef.library.function, processFunction);
-            }
-
+            
+            rawNodes.forEach(processRawNode);              
             opNodes.splice(index);
             nodeNames.splice(index);
             return opNodes;
           },
           tracker)
+
       .then((opNodes) => {
         // Create the graph data structure from the graphlib library.
         return  runAsyncTask(
             'Building the data structure', 70, () => {
-              let normalizedNameDict =
-                  mapStrictHierarchy(nodeNames, embeddingNodeNames);
-              let graph = new SlimGraph;
+              let normalizedNameDict = mapStrictHierarchy(nodeNames, embeddingNodeNames);
+              let graph = new SlimGraph();
 
               // Add the nodes to the graph.
               _.each(opNodes, opNode => {
                 let normalizedName =
-                    normalizedNameDict[opNode.name] || opNode.name;
+                  normalizedNameDict[opNode.name] || opNode.name;
                 graph.nodes[normalizedName] = opNode;
-                // Check if the node has out-embeddings. If yes, add them to the
-                // node.
-                if (opNode.name in outEmbeddings) {
-                  opNode.outEmbeddings = outEmbeddings[opNode.name];
-                  // Normalize the names of the out-embeddings.
-                  _.each(opNode.outEmbeddings, node => {
-                    node.name = normalizedNameDict[node.name] || node.name;
-                  });
-                }
+
                 // Update the name of the node.
                 opNode.name = normalizedName;
               });
 
               // Visit each node's inputs to add the edges to the graph. If the
               // input
-              // is an in-embedding, then add it to the node's in-embeddings
-              // instead.
-              _.each(opNodes, opNode => {
-                _.each(opNode.inputs, (input, i) => {
-                  let inputName = input.name;
-                  if (inputName in inEmbedding) {
-                    let inEmbedNode = inEmbedding[inputName];
-                    opNode.inEmbeddings.push(inEmbedNode);
-                    // Move the inputs of the in-embedding node into incoming
-                    // edges of
-                    // the main node. E.g. the control dependency of a constant
-                    // node
-                    // should be moved to the op node where the constant is
-                    // embedded.
-                    for (let embedInput of inEmbedNode.inputs) {
-                      addEdgeToGraph(
-                          graph, normalizedNameDict[embedInput.name] ||
-                              embedInput.name,
-                          opNode, embedInput, params, i);
-                    }
-                  } else if (inputName in outEmbedding) {
-                    // Move the inputs of the out-embedding node into inputs of
-                    // the main node where the out-embedding points to.
-                    let outEmbedNode = outEmbedding[inputName];
-                    for (let embedInput of outEmbedNode.inputs) {
-                      addEdgeToGraph(
-                          graph, normalizedNameDict[embedInput.name] ||
-                              embedInput.name,
-                          opNode, input, params, i);
-                    }
-                  } else {
+              
+              opNodes.forEach(
+                opNode => {                  
+                  _.each(opNode.inputs, (input, i) => {
+                    let inputName = input.name;
+  
                     addEdgeToGraph(
-                        graph, normalizedNameDict[inputName] || inputName,
-                        opNode, input, params, i);
-                  }
-                });
-              });
+                      graph, normalizedNameDict[inputName] || inputName,
+                      opNode, input, params, i);
+  
+                  });
+                }
+              );
+              
 
-              // Normalize the names of in-embeddings.
-              _.each(inEmbedding, (node, name) => {
-                node.name = normalizedNameDict[node.name] || node.name;
-              });
 
               return graph;
             }, tracker);
@@ -1186,21 +787,7 @@ export function createGraph<N, E>(
   return graph;
 };
 
-/**
- * Create a predicate for checking whether a node should be embedded based on
- * the specified types.
- */
-function getEmbedPredicate(types: string[]) {
-  return function(node: OpNode) {
-    // check types
-    for (let i = 0; i < types.length; i++) {
-      let regExp = new RegExp(types[i]);
-      if (node.op.match(regExp)) { return true; }
-    }
-    return false;
-  };
-};
-
+ 
 /**
  * Returns a strict node name (name => name/(name)) to avoid conflicts
  * where the node name is also a namespace.

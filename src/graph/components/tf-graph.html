@@ -3,21 +3,19 @@
 
 <link rel="import" href="../../../bower_components/vaadin-split-layout/vaadin-split-layout.html">
 <link rel="import" href="../../../bower_components/paper-expansion-panel/paper-expansion-panel.html">
-<link rel="import" href="../../../bower_components/paper-input/paper-input.html">
+
 
 <dom-module id="tf-graph">
   <template>
     <style include="iron-flex-alignment iron-flex iron-flex-factors paper-material-styles iron-positioning">
       .container {
         width: 100%;
-        height: 100vh;
-        background: white;        
+        height: 100%;     
       }
 
       .splitter-content{
         overflow: auto;        
       }
-
 
       .vertical {
         width: 100%;
@@ -88,14 +86,7 @@
     <div class="container">
       <div class="vertical">
         
-        <div class="title">
-          <paper-input value="{{packageLockUrl}}"></paper-input>
-
-
-          <template is="dom-if" if="[[title]]">
-              <h2>[[title]]</h2>
-          </template>
-        </div>
+        
 
         <vaadin-split-layout orientation="horizontal" class="split">
           <div class="splitter-content-left">
@@ -104,7 +95,7 @@
                 highlighted-node="[[_getVisible(highlightedNode)]]"
                 selected-node="{{selectedNode}}"
                 selected-edge="{{selectedEdge}}"
-                color-by="[[_colorBy]]"
+                color-by="[[colorBy]]"
                 progress="[[progress]]"
                 node-context-menu-items="[[nodeContextMenuItems]]"
                 node-names-to-health-pills="[[nodeNamesToHealthPills]]"
@@ -112,13 +103,11 @@
                 handle-edge-selected="[[handleEdgeSelected]]"></graph-scene>
           </div>
           <div class="splitter-content-right">
-            
-            <!-- <button id="button" on-click="toggle">settings</button> -->
-            
-            <view-settings selected-color-by="{{_colorBy}}"></view-settings>
-
+              <!-- progress=[[progress]]  [[progress.value]] indeterminate=[[progress.indeterminate]]
+              msg=[[progress.msg]] -->
             <package-info 
               id="infoPanel"
+              progress="[[progress]]"
               on-load-graph="_onLoadGraphEvent"
               selected-node="{{selectedNode}}"
               highlighted-node="{{highlightedNode}}"

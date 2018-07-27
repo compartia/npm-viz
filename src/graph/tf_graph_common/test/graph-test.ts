@@ -1,4 +1,4 @@
-import { BuildParams, SlimGraph, joinStatsInfoWithGraph } from "../graph";
+import { BuildParams, SlimGraph} from "../graph";
 import * as util from "../util";
 import * as testutil from "./util";
 import * as parser from "../parser";
@@ -42,21 +42,7 @@ describe('graph', () => {
         input: "Q:2"
         input: "W"
       }`);
-    let statsPbtxt = testutil.stringToArrayBuffer(`step_stats {
-      dev_stats {
-        device: "cpu"
-        node_stats {
-          node_name: "Q"
-          all_start_micros: 10
-          all_end_rel_micros: 4
-        }
-        node_stats {
-          node_name: "Q"
-          all_start_micros: 12
-          all_end_rel_micros: 4
-        }
-      }
-    }`);
+     
 
     let buildParams:  BuildParams = {
       enableEmbedding: true,
@@ -80,15 +66,10 @@ describe('graph', () => {
             let secondInputOfX = slimGraph.nodes['X'].inputs[1];
             assert.equal(secondInputOfX.name, 'W');
             assert.equal(secondInputOfX.outputTensorKey, '0');
-
-            parser.parseStatsPbTxt(statsPbtxt).then(stepStats => {
-              joinStatsInfoWithGraph(slimGraph, stepStats);
-              assert.equal(slimGraph.nodes['Q'].stats.getTotalMicros(), 6);
-              done();
-            });
+             
           });
     });
-  });
+  }); 
 
   it('health pill numbers round correctly', () => {
     // Integers are rounded to the ones place.
