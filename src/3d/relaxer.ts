@@ -39,8 +39,6 @@ export class Relaxer {
             n.pos = newPos;
 
             n.vel.multiplyScalar(0.9);
-            // console.log(n.vel);
-            console.log(n.pos);
         }
 
     }

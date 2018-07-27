@@ -20,8 +20,9 @@ export abstract class SimpleScene {
         let fogColor = new THREE.Color(0xcccccc);
 
         this.scene.background = fogColor;
-        this.scene.fog = new THREE.Fog(fogColor.getHex(), 0.025, 40);
-
+        this.scene.fog = new THREE.Fog(fogColor.getHex(), 0.05, 40);
+        // this.scene.fog = new THREE.FogExp2(fogColor.getHex(), 0.05 );
+        
 
 
         let renderer = new THREE.WebGLRenderer()

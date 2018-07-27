@@ -9,7 +9,8 @@ import { Vector3 } from 'three';
 
 export class Lib {
     public static lineColors = [
-        1, 0.5, 0.5, 0, 0, 0.5
+        1, 0.2, 0.2, 
+        0, 0, 0.5
     ];
 
 
@@ -69,7 +70,7 @@ class EdgeWrapper implements Edge {
 }
 
 export class P3dScene extends SimpleScene implements EdgesCollection, NodesCollection {
-
+    //   a:  THREE.FogExp2;
     relaxer: Relaxer;
     private nodes: ObjWrapper[];
     private edges: EdgeWrapper[];
@@ -115,12 +116,24 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
         const R = Math.sqrt(graph.edges.length) + 2;
         const R2 = R / 2;
 
+        let maxCardinality = 1;
+        for (let name of names) {
+            let c = graph.nodes[name].cardinality;
+            if (c > maxCardinality) {
+                maxCardinality = c;
+            }
+        }
+
         for (let name of names) {
             let packageName = graph.nodes[name].nodeAttributes["package"];
             let versionName = graph.nodes[name].nodeAttributes["version"];
+            let clr = 0.4 + (graph.nodes[name].cardinality * 0.6) / (maxCardinality);
+            if (clr > 1) clr = 1;
             let spritey = this.makeTextSprite(packageName, versionName,
-                { fontsize: 24, backgroundColor: { r: 255, g: 255, b: 255, a: 0.6 } });
-            spritey.position.set(Math.random() * R - R2, Math.random() * R - R2, Math.random() * R - R2);
+                { fontsize: 20, backgroundColor: { r: 255, g: 255, b: 255, a: clr } });
+            let pos = new THREE.Vector3(Math.random() * R - R2, Math.random() * R - R2, Math.random() * R - R2);
+            pos.setLength(R);
+            spritey.position.set(pos.x, pos.y, pos.z);
             this.scene.add(spritey);
 
             let ow = new ObjWrapper(spritey);
@@ -211,6 +224,7 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
 
     private makeTextSprite(message, versionName, parameters): THREE.Sprite {
+        const scale = 0.7;
         if (parameters === undefined) parameters = {};
 
         const fontface = parameters.hasOwnProperty("fontface") ?
@@ -228,35 +242,40 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
-        canvas.width = 128;
+        canvas.width = 256;
         canvas.height = 64;
+
+        const mh = canvas.height / 2;
+
         context.font = " " + fontsize + "px " + fontface;
 
         // get size data (height depends only on font size)
         let _metrics = context.measureText(message);
-        let textWidth = Math.max(_metrics.width, fontsize*5);
+        let textWidth = Math.max(_metrics.width, fontsize * 5);
 
 
-        let _fintScale = canvas.width / textWidth * 0.85;
+        let _fintScale = canvas.width / textWidth * 0.8;
         fontsize = fontsize * _fintScale;
         context.font = " " + fontsize + "px " + fontface;
 
         _metrics = context.measureText(message);
-        textWidth = Math.max(_metrics.width, fontsize*5);
+        textWidth = Math.max(_metrics.width, fontsize * 5);
 
         // background color
         context.fillStyle = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
             + backgroundColor.b + "," + backgroundColor.a + ")";
+        context.strokeStyle = "none";
 
+        // this.roundRect(context, 0, 0 + mh, canvas.width, fontsize * 1.8, 5);
+        this.roundRect(context, 0, 0, canvas.width, canvas.height, 5);
 
-        this.roundRect(context, 0, 0, canvas.width, fontsize * 1.8, 5);
- 
         // text color
+        // context.translate(0,-mh);
         context.fillStyle = "rgba(0, 0, 0, 1.0)";
-        context.fillText(message, (canvas.width - textWidth) / 2, fontsize * 1.5);
+        context.fillText(message, (canvas.width - textWidth) / 2, mh + fontsize * 0.5);
 
         context.font = " " + fontsize / 2 + "px " + fontface;
-        context.fillText(versionName, (canvas.width - textWidth) / 2, fontsize * 0.5);
+        context.fillText(versionName, (canvas.width - textWidth) / 2, mh - fontsize * 0.25);
 
         // canvas contents will be used for a texture
         const texture = new THREE.Texture(canvas)
@@ -265,20 +284,19 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
         const spriteMaterial = new THREE.SpriteMaterial(
             {
                 map: texture, lights: true, fog: true,
-
-
                 side: THREE.FrontSide
             });
         const sprite = new THREE.Sprite(spriteMaterial);
 
-        sprite.scale.set(2, 1, 1.0);
+        sprite.scale.set(scale * canvas.width / canvas.height, scale * 1, 1.0);
 
 
         return sprite;
     }
 
 
-    private roundRect(ctx, x, y, w, h, r) {
+    private roundRect(ctx: CanvasRenderingContext2D, x, y, w, h, r) {
+        // ctx.rect(x, y, w, h);
         ctx.beginPath();
         ctx.moveTo(x + r, y);
         ctx.lineTo(x + w - r, y);
