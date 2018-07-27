@@ -1,0 +1,14 @@
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+
+<dom-module id="tf-graph-loader">
+    <template>
+        <iron-ajax 
+            auto 
+            url="[[packageLockUrl]]" 
+            handle-as="json" 
+            last-response="{{jsonLoaded}}" 
+            debounce-duration="300"></iron-ajax>
+        <!-- on-response="onFileLoaded" -->
+
+    </template>
+</dom-module>

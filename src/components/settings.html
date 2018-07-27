@@ -1,0 +1,30 @@
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html" />
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html" />
+<link rel="import" href="../../bower_components/paper-button/paper-button.html" />
+
+<dom-module id="view-settings">
+    <template>
+        <style>
+  
+            .row {
+                @apply --layout-horizontal;
+            }
+        </style>
+
+
+        <div class="row">
+            <paper-dropdown-menu label="Color nodes by" no-animations dynamic-align>
+
+                <paper-listbox slot="dropdown-content" attr-for-selected="item-name" selected="{{selectedColorBy}}">
+                    <template is="dom-repeat" items="[[colorByTypes]]">
+                        <paper-item item-name="[[item]]">[[item]]</paper-item>
+                    </template>
+                </paper-listbox>
+            </paper-dropdown-menu>
+
+        </div>
+
+
+
+    </template>
+</dom-module>

@@ -31,6 +31,8 @@ module.exports = {
     // These rules tell Webpack how to process different module types.cd ..
     // Remember, *everything* is a module in Webpack. That includes
     // CSS, and (thanks to our loader) HTML.
+
+    mode:"development",
     module: {
         rules: [
             {
@@ -74,11 +76,12 @@ module.exports = {
 
         new Clean(['build']),
     ],
+     
     devServer: {
-    contentBase: path.join(__dirname),
-        compress: true,
-        overlay: true,
-        port: 9000,
-        setup: setupServerMockup,
-},
+        contentBase: path.join(__dirname),
+            compress: true,
+            overlay: true,
+            port: 9020,
+            setup: setupServerMockup,
+    },
 };

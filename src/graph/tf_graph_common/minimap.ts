@@ -12,7 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.scene {
+ 
+import * as d3 from 'd3';
 
 /** Show minimap when the viewpoint area is less than X% of the whole area. */
 const FRAC_VIEWPOINT_AREA: number = 0.8;
@@ -66,18 +67,24 @@ export class Minimap {
    * @param maxWandH The maximum width/height for the minimap.
    * @param labelPadding Padding in pixels due to the main graph labels.
    */
-  constructor(svg: SVGSVGElement, zoomG: SVGGElement,
-      mainZoom: d3.ZoomBehavior<any, any>, minimap: HTMLElement,
-      maxWandH: number, labelPadding: number) {
+  constructor(
+      svg: SVGSVGElement, 
+      zoomG: SVGGElement,
+      mainZoom: d3.ZoomBehavior<any, any>, 
+      minimap: HTMLElement,
+      maxWandH: number, labelPadding: number, 
+      minimapSvg: SVGSVGElement) {
+
     this.svg = svg;
     this.labelPadding = labelPadding;
     this.zoomG = zoomG;
     this.mainZoom = mainZoom;
     this.maxWandH = maxWandH;
     let $minimap = d3.select(minimap);
+
     // The minimap will have 2 main components: the canvas showing the content
     // and an svg showing a rectangle of the currently zoomed/panned viewpoint.
-    let $minimapSvg = $minimap.select('svg');
+    let $minimapSvg = d3.select(minimapSvg);
 
     // Make the viewpoint rectangle draggable.
     let $viewpoint = $minimapSvg.select('rect');
@@ -139,7 +146,8 @@ export class Minimap {
    * was updated (e.g. when a node was expanded).
    */
   update(): void {
-    let sceneSize = null;
+ 
+    let sceneSize:SVGRect|null = null;
     try {
       // Get the size of the entire scene.
       sceneSize = this.zoomG.getBBox();
@@ -152,6 +160,8 @@ export class Minimap {
       // detached from the dom.
       return;
     }
+    if(!sceneSize) return;
+
     let $download = d3.select('#graphdownload');
     this.download = <HTMLLinkElement>$download.node();
     $download.on('click', d => {
@@ -163,10 +173,11 @@ export class Minimap {
     // The svg needs to be self contained, i.e. all the style rules need to be
     // embedded so the canvas output matches the origin.
     let stylesText = '';
-    for (let k = 0; k < document.styleSheets.length; k++) {
+    let doc:any=this.svg.parentNode;
+    for (let k = 0; k < doc.styleSheets.length; k++) {
       try {
-        let cssRules = (<any>document.styleSheets[k]).cssRules ||
-          (<any>document.styleSheets[k]).rules;
+        let cssRules = (<any>doc.styleSheets[k]).cssRules ||
+          (<any>doc.styleSheets[k]).rules;
         if (cssRules == null) {
           continue;
         }
@@ -249,10 +260,16 @@ export class Minimap {
     image.onload = () => {
       // Draw the svg content onto the buffer canvas.
       let context = this.canvasBuffer.getContext('2d');
-      context.clearRect(0, 0, this.canvasBuffer.width,
+      if (context) {
+        context.clearRect(0, 0, this.canvasBuffer.width,
           this.canvasBuffer.height);
-      context.drawImage(image, 0, 0,
-        this.minimapSize.width, this.minimapSize.height);
+        context.drawImage(image, 0, 0,
+          this.minimapSize.width, this.minimapSize.height);
+      } else {
+        throw "no context";
+      }
+
+
       requestAnimationFrame(() => {
         // Hide the old canvas and show the new buffer canvas.
         d3.select(this.canvasBuffer).style('display', null);
@@ -261,10 +278,15 @@ export class Minimap {
         [this.canvas, this.canvasBuffer] = [this.canvasBuffer, this.canvas];
       });
       let downloadContext = this.downloadCanvas.getContext('2d');
-      downloadContext.clearRect(0, 0, this.downloadCanvas.width,
-        this.downloadCanvas.height);
-      downloadContext.drawImage(image, 0, 0,
-        this.downloadCanvas.width, this.downloadCanvas.height);
+      if (downloadContext) {
+        downloadContext.clearRect(0, 0, this.downloadCanvas.width,
+          this.downloadCanvas.height);
+        downloadContext.drawImage(image, 0, 0,
+          this.downloadCanvas.width, this.downloadCanvas.height);
+      } else {
+        throw "no context";
+      }
+
     };
     image.onerror = () => {
       let blob = new Blob([svgXml], {type: 'image/svg+xml;charset=utf-8'});
@@ -326,4 +348,4 @@ export class Minimap {
   }
 }
 
-} // close module tf.scene
+ 

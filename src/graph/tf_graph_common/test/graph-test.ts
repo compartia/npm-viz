@@ -1,3 +1,10 @@
+import { BuildParams, SlimGraph} from "../graph";
+import * as util from "../util";
+import * as testutil from "./util";
+import * as parser from "../parser";
+import * as graph from "../graph";
+import { humanizeHealthPillStat } from "../scene";
+
 /* Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the 'License');
@@ -12,7 +19,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.graph {
+ 
 
 describe('graph', () => {
   let assert = chai.assert;
@@ -20,7 +27,7 @@ describe('graph', () => {
   it('graphlib exists', () => { assert.isTrue(graphlib != null); });
 
   it('simple graph contruction', done => {
-    let pbtxt = tf.graph.test.util.stringToArrayBuffer(`
+    let pbtxt =  testutil.stringToArrayBuffer(`
       node {
         name: "Q"
         op: "Input"
@@ -35,32 +42,18 @@ describe('graph', () => {
         input: "Q:2"
         input: "W"
       }`);
-    let statsPbtxt = tf.graph.test.util.stringToArrayBuffer(`step_stats {
-      dev_stats {
-        device: "cpu"
-        node_stats {
-          node_name: "Q"
-          all_start_micros: 10
-          all_end_rel_micros: 4
-        }
-        node_stats {
-          node_name: "Q"
-          all_start_micros: 12
-          all_end_rel_micros: 4
-        }
-      }
-    }`);
+     
 
-    let buildParams: tf.graph.BuildParams = {
+    let buildParams:  BuildParams = {
       enableEmbedding: true,
       inEmbeddingTypes: ['Const'],
       outEmbeddingTypes: ['^[a-zA-Z]+Summary$'],
       refEdges: {}
     };
     let dummyTracker =
-        tf.graph.util.getTracker({set: () => { return; }, progress: 0});
-    tf.graph.parser.parseGraphPbTxt(pbtxt).then(nodes => {
-      tf.graph.build(nodes, buildParams, dummyTracker)
+        util.getTracker({set: () => { return; }, progress: 0});
+     parser.parseGraphPbTxt(pbtxt).then(nodes => {
+       graph.build(nodes, buildParams, dummyTracker)
           .then((slimGraph: SlimGraph) => {
             assert.isTrue(slimGraph.nodes['X'] != null);
             assert.isTrue(slimGraph.nodes['W'] != null);
@@ -73,34 +66,28 @@ describe('graph', () => {
             let secondInputOfX = slimGraph.nodes['X'].inputs[1];
             assert.equal(secondInputOfX.name, 'W');
             assert.equal(secondInputOfX.outputTensorKey, '0');
-
-            tf.graph.parser.parseStatsPbTxt(statsPbtxt).then(stepStats => {
-              tf.graph.joinStatsInfoWithGraph(slimGraph, stepStats);
-              assert.equal(slimGraph.nodes['Q'].stats.getTotalMicros(), 6);
-              done();
-            });
+             
           });
     });
-  });
+  }); 
 
   it('health pill numbers round correctly', () => {
     // Integers are rounded to the ones place.
-    assert.equal(tf.graph.scene.humanizeHealthPillStat(42.0, true), '42');
+    assert.equal(humanizeHealthPillStat(42.0, true), '42');
 
     // Numbers with magnitude >= 1 are rounded to the tenths place.
-    assert.equal(tf.graph.scene.humanizeHealthPillStat(1, false), '1.0');
-    assert.equal(tf.graph.scene.humanizeHealthPillStat(42.42, false), '42.4');
-    assert.equal(tf.graph.scene.humanizeHealthPillStat(-42.42, false), '-42.4');
+    assert.equal(humanizeHealthPillStat(1, false), '1.0');
+    assert.equal(humanizeHealthPillStat(42.42, false), '42.4');
+    assert.equal(humanizeHealthPillStat(-42.42, false), '-42.4');
 
     // Numbers with magnitude < 1 are written in scientific notation rounded to
     // the tenths place.
-    assert.equal(tf.graph.scene.humanizeHealthPillStat(0, false), '0.0e+0');
-    assert.equal(tf.graph.scene.humanizeHealthPillStat(0.42, false), '4.2e-1');
-    assert.equal(
-        tf.graph.scene.humanizeHealthPillStat(-0.042, false), '-4.2e-2');
+    assert.equal( humanizeHealthPillStat(0, false), '0.0e+0');
+    assert.equal( humanizeHealthPillStat(0.42, false), '4.2e-1');
+    assert.equal( humanizeHealthPillStat(-0.042, false), '-4.2e-2');
   });
 
   // TODO: write tests.
 });
 
-}  // module tf.graph
+ 

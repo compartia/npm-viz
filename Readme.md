@@ -1,6 +1,6 @@
 # My-App
 
-Polymer ES6-typeScript module 
+api example: http://registry.npmjs.org/acorn/5.7.1
 
 ## command
 
@@ -17,3 +17,12 @@ Polymer ES6-typeScript module
 `npm run test:persist` bundle test files with webpack and watch on changes.
 
 `npm run doc` generate project documentation with typedoc.
+
+
+### dev mode
+
+`npm run demo` run prj in dev mode
+
+##server
+
+`sh tts.sh ./server/server` run server 

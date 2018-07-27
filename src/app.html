@@ -1,0 +1,163 @@
+<!-- <link type="module"  href="../../node_modules/@polymer/iron-flex-layout/iron-flex-layout-classes.js"> -->
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../bower_components/paper-progress/paper-progress.html">
+
+ 
+ 
+<dom-module id="npm-deps-graph">
+
+  <template>
+
+    <style is="custom-style" include="iron-flex iron-flex-alignment">
+      :host {
+        font-family: 'Roboto', sans-serif;
+        font-size: 12px;
+
+        margin: 0;
+        padding: 0;
+      }
+
+      .mono {
+        font-family: var(--mono);
+      }
+
+      .tabs {
+        --paper-tab-ink: var(--color-brand);
+        --paper-tabs-selection-bar-color: var(--color-brand);
+
+        height: 58px;
+        /* padding-bottom: 2px; */
+        --paper-tabs: {
+          /* background: var(--color-bg-primary); */
+          text-transform: uppercase;
+        }
+
+      }
+
+      .container {
+        width: 100%;
+        height: 100vh;
+
+        @apply --layout-vertical;
+      }
+
+      .header {
+
+        -webkit-box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.1);
+        -moz-box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.1);
+        box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.1);
+
+        z-index: 200;
+        background: var(--color-bg-secondary);
+        width: 100%;
+
+        @apply --layout-horizontal;
+        @apply --layout-center-justified;
+      }
+
+      .pages {
+        @apply --layout-flex;
+        height: 100%;
+        overflow: auto;
+      }
+
+      .header-middle {
+        @apply --layout-flex;
+        @apply --layout-self-center;
+        vertical-align: middle;
+        padding: var(--padding-2);
+        padding-left: calc( var(--padding) * 2);
+      }
+
+      .package-url {
+        color: var(--color-tx-secondary);
+      }
+
+      .drop-down-contents {
+        display: block;
+        padding: calc( 2 * var(--padding));
+        min-height: 40px;
+        font-size: 100%;
+      }
+
+      h1.package-name {
+        font-size: var(--font-size-l);
+        color: var(--color-tx-secondary);
+        padding: 0;
+        margin: 0;
+      }
+
+      #progress{
+        --paper-progress-active-color: var(--color-accent);
+        width:100%;
+      }
+    </style>
+
+
+    <tf-graph-loader id="loader" 
+      json-loaded="{{packageInfo}}" 
+      out-graph="{{_graph}}" 
+      package-lock-url="[[_packageLockUrl]]"
+      progress="{{progress}}">
+    </tf-graph-loader>
+
+    <div class="container">
+      <paper-progress 
+        id="progress" 
+        value="[[progress.value]]"
+        indeterminate="[[progress.indeterminate]]"></paper-progress>
+
+      <div class="header">
+        <div class="header-left">
+          <paper-menu-button dynamic-align no-animations close-on-activate>
+            <paper-icon-button slot="dropdown-trigger" icon="icons:open-in-browser" alt="open package-lock.json"></paper-icon-button>
+            <div slot="dropdown-content" class="drop-down-contents">
+              <h3>Load dependencies graph</h3>
+              <load-package url="{{packageLockUrl}}"></load-package>
+            </div>
+          </paper-menu-button>
+        </div>
+
+        <paper-tabs class="tabs" selected="{{selectedTab}}">
+          <paper-tab>Graph</paper-tab>          
+          <paper-tab>Package.json</paper-tab>
+          <paper-tab>Package-lock.json</paper-tab>
+          <paper-tab>3D</paper-tab>
+        </paper-tabs>
+
+        <div class="header-middle">
+          <h1 class="package-name mono">[[packageInfo.name]] @ [[packageInfo.version]]</h1>
+          <span class="package-url mono">[[_packageLockUrl]]</span>
+        </div>
+
+        <div>
+          <paper-menu-button no-animations close-on-activate dynamic-align>
+            <paper-icon-button slot="dropdown-trigger" icon="icons:settings" alt="settings"></paper-icon-button>
+            <div slot="dropdown-content" class="drop-down-contents">
+              <view-settings selected-color-by="{{_colorBy}}"></view-settings>
+            </div>
+          </paper-menu-button>
+        </div>
+      </div>
+
+      <iron-pages class="pages" selected="{{selectedTab}}">
+        <tf-graph id="graph" progress="[[progress]]" package-lock-url="{{_packageLockUrl}}" color-by="[[_colorBy]]"></tf-graph>
+
+        <div>Page 2</div>
+
+        <div>
+          <pre class="mono">[[_packageLockContents]]</pre>           
+        </div>
+
+        <div><graph3d-scene id="scene3d" out-graph="[[_graph]]" ></graph3d-scene></div>
+
+      </iron-pages>
+    </div>
+
+  </template>
+</dom-module>
