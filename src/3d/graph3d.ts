@@ -89,8 +89,8 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
         // let mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(2, 0), Lib.materialStandard);
         // this.scene.add(mesh);
-        let axis = new THREE.AxesHelper(10)
-        this.scene.add(axis);
+        // let axis = new THREE.AxesHelper(10)
+        // this.scene.add(axis);
 
     }
 
@@ -98,8 +98,7 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
     private names2mesh: { [nodeName: string]: ObjWrapper } = {};
     public rebuild(graph: SlimGraph) {
-        const R = 16;
-        const R2 = R / 2;
+        
 
         this.names2mesh = {};
         this.nodes = [];
@@ -111,11 +110,13 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
         let names = Object.keys(graph.nodes);
 
+        const R = Math.sqrt(graph.edges.length)+2;
+        const R2 = R / 2;
 
         for (let name of names) {
             let label = graph.nodes[name].nodeAttributes["label"];
             let spritey = this.makeTextSprite(label,
-                { fontsize: 24, backgroundColor: { r: 255, g: 100, b: 100, a: 0.2 } });
+                { fontsize: 24, backgroundColor: { r: 255, g: 255, b: 255, a: 0.6 } });
             spritey.position.set(Math.random() * R - R2, Math.random() * R - R2, Math.random() * R - R2);
             this.scene.add(spritey);
 
@@ -164,82 +165,45 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
 
         let mid = min.clone().add(max).divideScalar(2);
-        let size = max.clone().sub(min) ;
+        let size = max.clone().sub(min);
         // this.camera.position.x=max.x;
         // this.camera.position.y=max.y;
         // this.camera.position.z=max.z;
-         this.camera.lookAt(mid);
-        this.camera.position.setLength(size.length()*0.6);
+        // this.camera.lookAt(mid);
+        // this.camera.position.setLength(size.length() * 0.6);
 
-        (this.scene.fog as any).far=size.length();
-        
+        (this.scene.fog as any).far = size.length();
+
+        this.controls.target.x=mid.x;
+        this.controls.target.y=mid.y;
+        this.controls.target.y=mid.z;
+        this.controls.maxDistance=size.length()*1.2;
+        this.controls.update();
     }
 
 
-    private __makeConnector(a: ObjWrapper, b: ObjWrapper): THREE.Line {
 
-        let mid = a.pos.clone().add(b.pos).divideScalar(2);
-
-        var curve = new THREE.CatmullRomCurve3([
-            a.pos,
-            mid,
-            b.pos
-        ]);
-
-        var points = curve.getPoints(50);
-        var geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-        var material = new THREE.LineBasicMaterial({ color: 0xff0000, fog: true, linewidth:4 });
-
-        // Create the final object to add to the scene
-        var curveObject = new THREE.Line(geometry, material);
-
-
-        return curveObject;
-    }
 
     private makeConnector(a: ObjWrapper, b: ObjWrapper): THREE.Line {
 
-        // var geometry = new THREE.Geometry();
-        // geometry.vertices.push(a.pos);
-        // geometry.vertices.push(b.pos);
-        // geometry.verticesNeedUpdate = true;
 
-
-        // var points = new Array(6);
-        //   a.pos.toArray(points)
-        //   b.pos.toArray(points, 3);
-        // var points =[a.pos, b.pos];
-        let geometry = new THREE.BufferGeometry();//.setFromPoints(points);
-        // geometry.addAttribute( 'position', new THREE.BufferAttribute( points, 3 ) );
-        let mat = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors, fog: true, linewidth: 3  });
+        let geometry = new THREE.BufferGeometry();
+        let mat = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors, fog: true, linewidth: 3 });
 
         let positions = [];
         let colors = [];
         positions.push(a.pos.x, a.pos.y, a.pos.z);
         positions.push(b.pos.x, b.pos.y, b.pos.z);
 
-        colors.push( 1, 0.5, 0.5 );
-        colors.push( 0, 0, 0.5 );
+        colors.push(1, 0.5, 0.5);
+        colors.push(0, 0, 0.5);
 
-        // geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( 3 ), 3 ) );
         geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-
-
-
-
-        // geometry.attributes.position.setXYZ( 0, a.pos.x,  a.pos.y,  a.pos.z );
-        // geometry.attributes.position.setXYZ( 1  , b.pos.x,  b.pos.y,  b.pos.z );
-        // (geometry.attributes.position as THREE.BufferAttribute).needsUpdate=true;
+        geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
 
         geometry.computeBoundingSphere();
 
-
-        // var material = new THREE.LineBasicMaterial({ color: 0xff0000, fog: true });
-
-        // Create the final object to add to the scene
         var curveObject = new THREE.Line(geometry, mat);
 
 
@@ -257,16 +221,12 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
         const fontsize = parameters.hasOwnProperty("fontsize") ?
             parameters["fontsize"] : 18;
 
-        const borderThickness = parameters.hasOwnProperty("borderThickness") ?
-            parameters["borderThickness"] : 4;
 
-        const borderColor = parameters.hasOwnProperty("borderColor") ?
-            parameters["borderColor"] : { r: 0, g: 0, b: 0, a: 1.0 };
 
         const backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
             parameters["backgroundColor"] : { r: 255, g: 255, b: 255, a: 1.0 };
 
-        // var spriteAlignment = THREE.SpriteAlignment.topLeft;
+
 
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -288,11 +248,8 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
         // background color
         context.fillStyle = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
             + backgroundColor.b + "," + backgroundColor.a + ")";
-        // border color
-        // context.strokeStyle = "rgba(" + borderColor.r + "," + borderColor.g + ","
-        //     + borderColor.b + "," + borderColor.a + ")";
 
-        // context.lineWidth = borderThickness;
+
         this.roundRect(context, 0, 0, canvas.width, fontsize * 1.4, 5);
         // 1.4 is extra height factor for text below baseline: g,j,p,q.
 
@@ -345,39 +302,12 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
         let timer = 0.002 * Date.now()
 
-        // this.molecule.Ĥ();
-        // this.molecule.update(1);
 
-        
-
-
-        // this.camera.position.x += 0.1;//2 + 0.5 * Math.sin(timer)
-        // this.camera.position.y += 0.2;//2 + 0.5 * Math.sin(timer)
-        // this.camera.position.z += 0.1 * Math.sin(timer / 10)
-
-
-        // this.camera.lookAt(this.scene.position);
-
-
-        // this.camera.position.setLength(10);
         this.renderer.render(this.scene, this.camera);
 
-        this.controls.update();
-        // this.postprocessing.composer.render( 0.1 );
-
+        // this.controls.update();
+       
     }
 
 }
-
-
-
-// //----------------------
-// const cs: ChemScene = new ChemScene(document.body);
-
-
-// function step(timestamp) {
-// 	cs.render();
-// 	window.requestAnimationFrame(step);
-// }
-
-// window.requestAnimationFrame(step);
+ 

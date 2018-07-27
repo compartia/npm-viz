@@ -1,17 +1,16 @@
-import * as THREE from 'three'
-import * as TA from 'three-addons'
- 
+import * as THREE from 'three-full'
+
 
 
 export abstract class SimpleScene {
     scene: THREE.Scene;
     renderer: THREE.WebGLRenderer;
-    camera: THREE.Camera;
+    camera: THREE.PerspectiveCamera;
 
     container: HTMLElement;
-    private light1: THREE.Light;
+    private light1: THREE.Light;    
 
-    controls: TA.OrbitControls;
+    controls: THREE.OrbitControls;
     postprocessing: any;
 
     constructor(container: HTMLElement) {
@@ -37,13 +36,6 @@ export abstract class SimpleScene {
         // add canvas to dom
         container.appendChild(this.renderer.domElement);
 
-        // add axis to the scene
-        // let axis = new T.AxesHelper(10)
-        // this.scene.add(axis);
-
-
-
-        // this.initPostprocessing();
 
         this.resetScene();
     }
@@ -63,8 +55,23 @@ export abstract class SimpleScene {
 
 
     private initControls() {
-        this.controls = new TA.OrbitControls(this.camera, this.container);
+        let controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
 
+        controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+        controls.dampingFactor = 0.25;
+        // controls.screenSpacePanning = false;
+        controls.minDistance = 1;
+        controls.maxDistance = 50
+
+        controls.enableZoom = true;
+        controls.enablePan = true;
+
+        // controls.autoRotate = true;
+
+
+
+
+        this.controls = controls;
 
     }
 
@@ -99,10 +106,9 @@ export abstract class SimpleScene {
         this.camera.position.z = 5
 
         this.camera.lookAt(this.scene.position);
-        // this.camera.lookAt(<T.Vector3>{x:0,y:5,z:0});
 
         this.initControls();
-
+        this.controls.update();
     }
 
 

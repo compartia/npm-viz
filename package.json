@@ -19,7 +19,9 @@
     "ozone-api-request": "^3.0.0",
     "reflect-metadata": "^0.1.12",
     "three": "^0.94.0",
-    "three-addons": "^1.2.0"
+     
+    "three-full": "^8.0.0"
+    
   },
   "devDependencies": {
     "@polymer/gen-closure-declarations": "^0.4.0",
