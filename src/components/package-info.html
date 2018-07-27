@@ -58,20 +58,23 @@
 
                 <paper-button raised on-tap="loadGraph">load graph</paper-button>
 
-                <!-- [[jsonLoaded.keywords]] -->
-                <template is="dom-repeat" items="[[jsonLoaded.keywords]]">
-                    <div class="keyword">[[item]]</div>
-                </template>
-
+             
                 
 
                 <!-- <template is="dom-repeat" items="[[jsonLoaded.dependencies]]">
                                     <div class="keyword">[[item]]</div>
                                 </template> -->
             </section>
-            <paper-expansion-panel class="panel-settings" header="Details">
+            <paper-expansion-panel class="panel-settings" header="Details" opened>
                     [[jsonLoaded.description]]<br>
                     [[jsonLoaded.repository.url]]
+
+                    <br>
+                       <!-- [[jsonLoaded.keywords]] -->
+                <template is="dom-repeat" items="[[jsonLoaded.keywords]]">
+                    <div class="keyword">[[item]]</div>
+                </template>
+
 
             </paper-expansion-panel>
 
