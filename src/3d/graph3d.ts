@@ -67,15 +67,15 @@ class EdgeWrapper implements Edge {
     }
 
 }
-const ARC_SEGMENTS = 2;
+
 export class P3dScene extends SimpleScene implements EdgesCollection, NodesCollection {
-
-
-
 
     relaxer: Relaxer;
     private nodes: ObjWrapper[];
     private edges: EdgeWrapper[];
+    private names2mesh: { [nodeName: string]: ObjWrapper } = {};
+
+
     constructor(container: HTMLElement) {
         super(container);
         this.relaxer = new Relaxer();
@@ -96,12 +96,14 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
 
 
-    private names2mesh: { [nodeName: string]: ObjWrapper } = {};
+
     public rebuild(graph: SlimGraph) {
 
 
         this.names2mesh = {};
         this.nodes = [];
+        this.edges = [];
+
         //XXX: re-use object if any
 
         console.error("graph rebuild: " + graph.edges.length);
@@ -114,8 +116,9 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
         const R2 = R / 2;
 
         for (let name of names) {
-            let label = graph.nodes[name].nodeAttributes["label"];
-            let spritey = this.makeTextSprite(label,
+            let packageName = graph.nodes[name].nodeAttributes["package"];
+            let versionName = graph.nodes[name].nodeAttributes["version"];
+            let spritey = this.makeTextSprite(packageName, versionName,
                 { fontsize: 24, backgroundColor: { r: 255, g: 255, b: 255, a: 0.6 } });
             spritey.position.set(Math.random() * R - R2, Math.random() * R - R2, Math.random() * R - R2);
             this.scene.add(spritey);
@@ -125,7 +128,7 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
             this.nodes.push(ow);
         }
 
-        this.edges = [];
+
         for (let edge of graph.edges) {
             let line = this.makeConnector(this.names2mesh[edge.v], this.names2mesh[edge.w]);
             this.scene.add(line);
@@ -207,13 +210,13 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
 
 
 
-    private makeTextSprite(message, parameters): THREE.Sprite {
+    private makeTextSprite(message, versionName, parameters): THREE.Sprite {
         if (parameters === undefined) parameters = {};
 
         const fontface = parameters.hasOwnProperty("fontface") ?
             parameters["fontface"] : "Roboto";
 
-        const fontsize = parameters.hasOwnProperty("fontsize") ?
+        let fontsize = parameters.hasOwnProperty("fontsize") ?
             parameters["fontsize"] : 18;
 
 
@@ -230,27 +233,30 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
         context.font = " " + fontsize + "px " + fontface;
 
         // get size data (height depends only on font size)
-        let metrics = context.measureText(message);
-        let textWidth = metrics.width;
+        let _metrics = context.measureText(message);
+        let textWidth = Math.max(_metrics.width, fontsize*5);
 
 
-        let fintScale = canvas.width / textWidth * 0.85;
-        context.font = " " + fontsize * fintScale + "px " + fontface;
+        let _fintScale = canvas.width / textWidth * 0.85;
+        fontsize = fontsize * _fintScale;
+        context.font = " " + fontsize + "px " + fontface;
 
-        metrics = context.measureText(message);
-        textWidth = metrics.width;
+        _metrics = context.measureText(message);
+        textWidth = Math.max(_metrics.width, fontsize*5);
 
         // background color
         context.fillStyle = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
             + backgroundColor.b + "," + backgroundColor.a + ")";
 
 
-        this.roundRect(context, 0, 0, canvas.width, fontsize * 1.4, 5);
-        // 1.4 is extra height factor for text below baseline: g,j,p,q.
-
+        this.roundRect(context, 0, 0, canvas.width, fontsize * 1.8, 5);
+ 
         // text color
         context.fillStyle = "rgba(0, 0, 0, 1.0)";
-        context.fillText(message, (canvas.width - textWidth) / 2, fontsize);
+        context.fillText(message, (canvas.width - textWidth) / 2, fontsize * 1.5);
+
+        context.font = " " + fontsize / 2 + "px " + fontface;
+        context.fillText(versionName, (canvas.width - textWidth) / 2, fontsize * 0.5);
 
         // canvas contents will be used for a texture
         const texture = new THREE.Texture(canvas)
