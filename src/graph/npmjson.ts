@@ -52,7 +52,7 @@ export class NodeDefExt implements NodeDef {
     resolved: boolean = true;
 
     get degree():number{
-        return this._input.length + this._input.length;
+        return this._input.length + this._output.length;
     }
 
     public isUnresolved() {

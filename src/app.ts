@@ -5,6 +5,7 @@ import './app.html'
 import './components/load-package'
 import './graph/components/tf-graph'
 import './graph/components/tf-graph-loader'
+import './3d/graph3d-scene'
 
 import { SlimGraph } from "./graph/tf_graph_common/graph";
 import { getTracker, getSubtaskTracker } from "./graph/tf_graph_common/util";
@@ -28,7 +29,7 @@ export class NpmDepsGraph extends Polymer.Element {
   @property({ type: Object, observer: 'packageInfoChanged' })
   packageInfo: any;
 
-  @property({ type: Number })
+  @property({ type: Number, observer: 'selectedTabChanged' })
   selectedTab: number = 0;
 
   @property({ type: String, notify: true })
@@ -46,6 +47,16 @@ export class NpmDepsGraph extends Polymer.Element {
       this._packageLockContents = JSON.stringify(this.packageInfo, null, ' ');
     }
   }
+
+  public selectedTabChanged(e) {
+    if (this.selectedTab == 3) {
+      this.$.scene3d.active = true;
+      this.$.scene3d.step();
+    } else {
+      this.$.scene3d.active = false;
+    }
+  }
+
   private _graphUpdated(slimGraph: SlimGraph) {
     const tracker = getTracker(this.$.loader);
     const hierarchyTracker = getSubtaskTracker(

@@ -56,7 +56,7 @@ export class GraphScene extends Polymer.Element {
     outGraphHierarchy: hierarchy.Hierarchy = null;
 
     @property({ type: Object, notify: true, readOnly: true })
-    outGraph: GraphModule.SlimGraph;
+    outGraph: GraphModule.SlimGraph; 
 
     @property({ type: Object, notify: true, readOnly: true })
     outHierarchyParams: any;
