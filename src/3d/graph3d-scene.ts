@@ -36,11 +36,6 @@ export class DependencyLink extends Polymer.Element {
     public ready() {
         super.ready();
         this.scene = new P3dScene(this.$.scene3d);
-
-
-        // window["3dScene"] = this.scene;
-       // window.requestAnimationFrame(() => this.step);
-
     }
 
     
