@@ -10,25 +10,25 @@ import * as GraphModule from '../graph/tf_graph_common/graph';
 @customElement('graph3d-scene')
 export class DependencyLink extends Polymer.Element {
 
-
     @property({ type: Object })
     scene: P3dScene;
 
     @property({ type: Boolean })
-    active: boolean=false;
+    active: boolean = false;
 
-    @property({ type: Object, observer:"onGraphChanged" })
+    @property({ type: Object, observer: "onGraphChanged" })
     outGraph: GraphModule.SlimGraph;
 
 
-    private onGraphChanged(e){
-        this.active=false;
+    private onGraphChanged(e) {
+        this.active = false;
         this.scene.rebuild(this.outGraph);
-        this.active=true;
+        this.active = true;
     }
+
     public step(timestamp) {
         this.scene.render();
-        if(this.active)
+        if (this.active)
             window.requestAnimationFrame((t) => this.step(t));
     }
 
@@ -38,5 +38,4 @@ export class DependencyLink extends Polymer.Element {
         this.scene = new P3dScene(this.$.scene3d);
     }
 
-    
 }

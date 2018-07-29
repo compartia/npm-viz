@@ -8,7 +8,7 @@ export abstract class SimpleScene {
     camera: THREE.PerspectiveCamera;
 
     container: HTMLElement;
-    private light1: THREE.Light;    
+    private light1: THREE.Light;
 
     controls: THREE.OrbitControls;
     postprocessing: any;
@@ -21,9 +21,6 @@ export abstract class SimpleScene {
 
         this.scene.background = fogColor;
         this.scene.fog = new THREE.Fog(fogColor.getHex(), 0.05, 40);
-        // this.scene.fog = new THREE.FogExp2(fogColor.getHex(), 0.05 );
-        
-
 
         let renderer = new THREE.WebGLRenderer()
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -68,9 +65,6 @@ export abstract class SimpleScene {
         controls.enablePan = true;
 
         // controls.autoRotate = true;
-
-
-
 
         this.controls = controls;
 
