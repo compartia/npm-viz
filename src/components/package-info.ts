@@ -5,6 +5,8 @@ import { Hierarchy } from "../graph/tf_graph_common/hierarchy";
 import * as Graph from "../graph/tf_graph_common/graph";
 import * as _ from 'lodash';
 import { REGISTRY_URL } from "../consts";
+import { runAsyncTask, getTracker } from "../graph/tf_graph_common/util";
+import { ProgressTracker } from "../graph/tf_graph_common/common";
 
 
 @customElement('dependency-link')
@@ -46,7 +48,7 @@ export class PackageInfo extends Polymer.Element {
     graphHierarchy: Hierarchy;
 
     @property({ type: Object, notify: true })
-    progress: any;
+    progress: ProgressTracker;
 
     @property({ type: String })
     packageName: any;
@@ -101,9 +103,12 @@ export class PackageInfo extends Polymer.Element {
             this.outputs = _.map((node as any).outputs, n => this.graphHierarchy.node(n.name));
             this.inputs = _.map((node as any).inputs, n => this.graphHierarchy.node(n.name));
 
-            this.progress.value = 0;
-            this.progress.indeterminate = true;
+
+            this.set('progress', { value: 0, msg: "loading package info", indeterminate: true });
+
             this.$.apiRequest.generateRequest();
+
+
         } else {
             this.set("jsonLoaded", null);
         }
@@ -111,6 +116,7 @@ export class PackageInfo extends Polymer.Element {
 
     private onJsonLoaded(e) {
         console.log(this.jsonLoaded);
+        this.set('progress', { value: 100, msg: "loading package info", indeterminate: false });
     }
 
     public getSlectedNodeUrl(selectedNode: Graph.Node): string {
