@@ -1,0 +1,120 @@
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../../bower_components/iron-flex-layout/iron-flex-layout.html">
+
+<link rel="import" href="../../../bower_components/vaadin-split-layout/vaadin-split-layout.html">
+<link rel="import" href="../../../bower_components/paper-expansion-panel/paper-expansion-panel.html">
+
+
+<dom-module id="tf-graph">
+  <template>
+    <style include="iron-flex-alignment iron-flex iron-flex-factors paper-material-styles iron-positioning">
+      .container {
+        width: 100%;
+        height: 100%;     
+      }
+
+      .splitter-content{
+        overflow: auto;        
+      }
+
+      .vertical {
+        width: 100%;
+        height: 100%;
+       
+        @apply --layout-vertical;
+      }
+
+      .auto {
+        @apply --layout-flex-auto;
+        @apply --layout-vertical;
+      }
+
+      graph-scene{
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+       
+      }
+
+      .splitter-content-left{
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        width: 80%;
+      }
+
+      .splitter-content-right{
+        width: 20%;
+        overflow: auto;
+        margin: 0;
+        padding: 0;
+        min-width: 15px;
+        background: var(--color-bg-secondary);
+      }
+
+      h2 {
+        text-align: center;
+      }
+
+      paper-button {
+        text-transform: none;
+      }
+
+      .split {
+        height: 100%;
+      }
+
+      .panel-settings {
+               
+        --paper-expansion-panel-header: {
+            font-size: var(--font-size-l);
+            background: #fefeff;
+            text-transform: uppercase;
+            padding-left: var(--padding);
+            border-bottom: 1px solid var(--separator-color);
+            
+        };
+          
+        --paper-expansion-panel-content: {                    
+            padding: 0 var(--padding);
+        };
+      }
+    </style>
+
+
+    <div class="container">
+      <div class="vertical">
+        
+        
+
+        <vaadin-split-layout orientation="horizontal" class="split">
+          <div class="splitter-content-left">
+            <graph-scene id="scene"
+                render-hierarchy="[[renderHierarchy]]"
+                highlighted-node="[[_getVisible(highlightedNode)]]"
+                selected-node="{{selectedNode}}"
+                selected-edge="{{selectedEdge}}"
+                color-by="[[colorBy]]"
+                progress="[[progress]]"
+                node-context-menu-items="[[nodeContextMenuItems]]"
+                node-names-to-health-pills="[[nodeNamesToHealthPills]]"
+                health-pill-step-index="{{healthPillStepIndex}}"
+                handle-edge-selected="[[handleEdgeSelected]]"></graph-scene>
+          </div>
+          <div class="splitter-content-right">
+              <!-- progress=[[progress]]  [[progress.value]] indeterminate=[[progress.indeterminate]]
+              msg=[[progress.msg]] -->
+            <package-info 
+              id="infoPanel"
+              progress="[[progress]]"
+              on-load-graph="_onLoadGraphEvent"
+              selected-node="{{selectedNode}}"
+              highlighted-node="{{highlightedNode}}"
+              graph-hierarchy="{{graphHierarchy}}"></package-info>
+          </div>
+        </vaadin-split-layout>
+      </div>
+    </div>
+  </template>
+</dom-module>

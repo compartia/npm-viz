@@ -1,3 +1,5 @@
+/// <reference path="externs.d.ts"/>
+
 /* Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the 'License');
@@ -12,7 +14,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.graph.scene.edge {
+import * as d3 from 'd3';
+import * as _ from 'lodash';
+import { EDGE_KEY_DELIM, Metaedge, BaseEdge, OpNode } from './graph';
+import * as render from './render';
+import * as scene from './scene';
+import { Class } from './scene';
+import { EdgeData } from './annotation';
 
 /** Delimiter between dimensions when showing sizes of tensors. */
 const TENSOR_SHAPE_DELIM = '×';
@@ -44,13 +52,12 @@ let arrowheadMap =
 /** Minimum stroke width to put edge labels in the middle of edges */
 const CENTER_EDGE_LABEL_MIN_STROKE_WIDTH = 2.5;
 
-export type EdgeData = {v: string, w: string, label: render.RenderMetaedgeInfo};
-
+ 
 /**
  * Function run when an edge is selected.
  */
 export interface EdgeSelectionCallback {
-  (edgeData: scene.edge.EdgeData): void;
+  (edgeData: EdgeData): void;
 }
 
 export function getEdgeKey(edgeObj: EdgeData) {
@@ -76,9 +83,10 @@ export function getEdgeKey(edgeObj: EdgeData) {
  * @param sceneElement <tf-graph-scene> polymer element.
  * @return selection of the created nodeGroups
  */
-export function buildGroup(sceneGroup,
+export function buildGroup(sceneGroup : any,
     graph: graphlib.Graph<render.RenderNodeInfo, render.RenderMetaedgeInfo>,
-    sceneElement) {
+    sceneElement : any) {
+
   let edges: EdgeData[] = [];
   edges = _.reduce(graph.edges(), (edges, edgeObj) => {
     let edgeLabel = graph.edge(edgeObj);
@@ -90,12 +98,30 @@ export function buildGroup(sceneGroup,
     return edges;
   }, edges);
 
+  const $svg = d3.select(sceneElement.$.svg);
+
+  const _position = function(d) {
+   
+    let factory = function (a, b, c) {
+      return getEdgePathInterpolator($svg , a, b, c);
+    };
+  
+    d3.select(this)
+      .select('path.' + Class.Edge.LINE)
+      .transition()
+      .attrTween('d', factory as any);
+  };
+   
+
   let container =
       scene.selectOrCreateChild(sceneGroup, 'g', Class.Edge.CONTAINER);
 
   // Select all children and join with data.
   // (Note that all children of g.edges are g.edge)
-  let edgeGroups = (container as any).selectAll(function() {return this.childNodes;}).data(edges, getEdgeKey);
+  let edgeGroups = (container as any).selectAll(
+    function() {
+      return <any>this.childNodes;
+    }).data(edges, getEdgeKey);
 
   // Make edges a group to support rendering multiple lines for metaedge
   edgeGroups.enter()
@@ -128,13 +154,13 @@ export function buildGroup(sceneGroup,
         appendEdge(edgeGroup, d, sceneElement);
       })
       .merge(edgeGroups)
-      .each(position)
+      .each(_position)
       .each(function(d) {
     stylize(d3.select(this), d, sceneElement);
   });
 
   edgeGroups.exit()
-    .each(d => {
+    .each((d:EdgeData) => {
       delete sceneElement._edgeGroupIndex[getEdgeKey(d)];
     })
     .remove();
@@ -146,20 +172,8 @@ export function buildGroup(sceneGroup,
  * The label is the shape of the underlying tensor.
  */
 export function getLabelForBaseEdge(
-    baseEdge: BaseEdge, renderInfo: render.RenderGraphInfo): string {
-  let node = <OpNode>renderInfo.getNodeByName(baseEdge.v);
-  if (node.outputShapes == null || _.isEmpty(node.outputShapes)) {
-    return null;
-  }
-  let shape = node.outputShapes[baseEdge.outputTensorKey];
-  if (shape == null) {
-    return null;
-  }
-  if (shape.length === 0) {
-    return 'scalar';
-  }
-  return shape.map(size => { return size === -1 ? '?' : size; })
-      .join(TENSOR_SHAPE_DELIM);
+    baseEdge: BaseEdge, renderInfo: render.RenderGraphInfo): string | null {
+   return null;
 }
 
 /**
@@ -168,7 +182,7 @@ export function getLabelForBaseEdge(
  * shape. Otherwise, the label will say the number of tensors in the metaedge.
  */
 export function getLabelForEdge(metaedge: Metaedge,
-    renderInfo: render.RenderGraphInfo): string {
+    renderInfo: render.RenderGraphInfo): string | null {
   if (renderInfo.edgeLabelFunction) {
     // The user has specified a means of computing the label.
     return renderInfo.edgeLabelFunction(metaedge, renderInfo);
@@ -177,7 +191,7 @@ export function getLabelForEdge(metaedge: Metaedge,
   // Compute the label based on either tensor count or size.
   let isMultiEdge = metaedge.baseEdgeList.length > 1;
   return isMultiEdge ?
-      metaedge.baseEdgeList.length + ' tensors' :
+      metaedge.baseEdgeList.length + ' dependencies' :
       getLabelForBaseEdge(metaedge.baseEdgeList[0], renderInfo);
 }
 
@@ -196,10 +210,12 @@ export function getLabelForEdge(metaedge: Metaedge,
 function getPathSegmentIndexAtLength(
     points: render.Point[],
     length: number,
-    lineFunc: (points: render.Point[]) => string): number {
-  const path = document.createElementNS(tf.graph.scene.SVG_NAMESPACE, 'path');
+    lineFunc: (points: render.Point[]) => string| null): number {
+  const path:SVGPathElement = document.createElementNS( scene.SVG_NAMESPACE, 'path');
   for (let i = 1; i < points.length; i++) {
-    path.setAttribute("d", lineFunc(points.slice(0, i)));
+     
+    const lf: string | null = lineFunc(points.slice(0, i));
+    path.setAttribute("d", lf == null ? "" : lf);
     if (path.getTotalLength() > length) {
       // This many points has already exceeded the length.
       return i - 1;
@@ -221,12 +237,15 @@ function getPathSegmentIndexAtLength(
  */
 function adjustPathPointsForMarker(points: render.Point[],
     marker: d3.Selection<any, any, any, any>, isStart: boolean): render.Point[] {
-  let lineFunc = d3.line<render.Point>()
+  let lineFunc: d3.Line<render.Point> = d3.line<render.Point>()
     .x(d => d.x)
     .y(d => d.y);
+    
+  let _pp = lineFunc(points);
+
   let path =
-      d3.select(document.createElementNS('http://www.w3.org/2000/svg', 'path'))
-          .attr('d', lineFunc(points));
+    d3.select(document.createElementNS('http://www.w3.org/2000/svg', 'path'))
+      .attr('d', _pp == null ? "" : _pp);
   let markerWidth = +marker.attr('markerWidth');
   let viewBox = marker.attr('viewBox').split(' ').map(Number);
   let viewBoxWidth = viewBox[2] - viewBox[0];
@@ -270,7 +289,7 @@ function adjustPathPointsForMarker(points: render.Point[],
  * will sometimes be undefined, for example for some Annotation edges for which
  * there is no underlying Metaedge in the hierarchical graph.
  */
-export function appendEdge(edgeGroup, d: EdgeData,
+export function appendEdge(edgeGroup:any, d: EdgeData,
     sceneElement: {
         renderHierarchy: render.RenderGraphInfo,
         handleEdgeSelected: Function,
@@ -293,18 +312,18 @@ export function appendEdge(edgeGroup, d: EdgeData,
   let pathId = 'path_' + getEdgeKey(d);
   
   let strokeWidth;
-  if (sceneElement.renderHierarchy.edgeWidthFunction) {
-    // Compute edge thickness based on the user-specified method.
-    strokeWidth = sceneElement.renderHierarchy.edgeWidthFunction(d, edgeClass);
-  } else {
+  // if (sceneElement.renderHierarchy.edgeWidthFunction) {
+  //   // Compute edge thickness based on the user-specified method.
+  //   strokeWidth = sceneElement.renderHierarchy.edgeWidthFunction(d, edgeClass);
+  // } else {
     // Encode tensor size within edge thickness.
     let size = 1;
     if (d.label != null && d.label.metaedge != null) {
       // There is an underlying Metaedge.
       size = d.label.metaedge.totalSize;
     }
-    strokeWidth = sceneElement.renderHierarchy.edgeWidthSizedBasedScale(size);
-  }
+    strokeWidth = sceneElement.renderHierarchy.edgeWidthSizedBasedScale!(size);
+  // }
 
   let path = edgeGroup.append('path')
                  .attr('id', pathId)
@@ -360,7 +379,7 @@ export let interpolate: d3.Line<{x: number, y: number}> = d3.line<{x: number, y:
 /**
  * Returns a tween interpolator for the endpoint of an edge path.
  */
-function getEdgePathInterpolator(d: EdgeData, i: number, a: string) {
+function getEdgePathInterpolator($svg, d: EdgeData, i: number, a: string) {
   let renderMetaedgeInfo = <render.RenderMetaedgeInfo> d.label;
   let adjoiningMetaedge = renderMetaedgeInfo.adjoiningMetaedge;
   let points = renderMetaedgeInfo.points;
@@ -369,50 +388,62 @@ function getEdgePathInterpolator(d: EdgeData, i: number, a: string) {
   // of the path.
   if (d.label.startMarkerId) {
     points = adjustPathPointsForMarker(
-        points, d3.select('#' + d.label.startMarkerId), true);
+        points!, $svg.select('#' + d.label.startMarkerId), true);
   }
   if (d.label.endMarkerId) {
     points = adjustPathPointsForMarker(
-        points, d3.select('#' + d.label.endMarkerId), false);
+        points!, $svg.select('#' + d.label.endMarkerId), false);
   }
 
   if (!adjoiningMetaedge) {
-    return d3.interpolate(a, interpolate(points));
+    return d3.interpolate(a, interpolate(points!));
   }
 
   let renderPath = this;
 
   // Get the adjoining path that matches the adjoining metaedge.
   let adjoiningPath =
-    <SVGPathElement>((<HTMLElement>adjoiningMetaedge.edgeGroup.node())
+    <SVGPathElement>((<HTMLElement>adjoiningMetaedge.edgeGroup!.node())
       .firstChild);
 
   // Find the desired SVGPoint along the adjoining path, then convert those
   // coordinates into the space of the renderPath using its Current
   // Transformation Matrix (CTM).
-  let inbound = renderMetaedgeInfo.metaedge.inbound;
+  let inbound = renderMetaedgeInfo.metaedge!.inbound;
 
   return function(t) {
     let adjoiningPoint = adjoiningPath
       .getPointAtLength(inbound ? adjoiningPath.getTotalLength() : 0)
-      .matrixTransform(adjoiningPath.getCTM())
+      .matrixTransform(adjoiningPath.getCTM()!)
       .matrixTransform(renderPath.getCTM().inverse());
 
     // Update the relevant point in the renderMetaedgeInfo's points list, then
     // re-interpolate the path.
-    let index = inbound ? 0 : points.length - 1;
-    points[index].x = adjoiningPoint.x;
-    points[index].y = adjoiningPoint.y;
-    let dPath = interpolate(points);
+    let index = inbound ? 0 : points!.length - 1;
+    points![index].x = adjoiningPoint.x;
+    points![index].y = adjoiningPoint.y;
+    let dPath = interpolate(points!);
     return dPath;
   };
 }
 
+// function position(d) {
+//   d3.select(this)
+//       .select('path.' + Class.Edge.LINE)
+//       .transition()
+//       .attrTween('d', getEdgePathInterpolator as any);
+// };
+
 function position(d) {
+   
+  let factory = function (a, b, c) {
+    return getEdgePathInterpolator(this , a, b, c);
+  };
+
   d3.select(this)
-      .select('path.' + Class.Edge.LINE)
-      .transition()
-      .attrTween('d', getEdgePathInterpolator as any);
+    .select('path.' + Class.Edge.LINE)
+    .transition()
+    .attrTween('d', factory as any);
 };
 
 /**
@@ -428,4 +459,4 @@ function stylize(edgeGroup, d: EdgeData, stylize) {
       .classed('control-dep', metaedge && !metaedge.numRegularEdges);
 };
 
-} // close module
+ 

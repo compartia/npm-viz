@@ -12,7 +12,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-module tf.graph.scene.annotation {
+
+import { Class, selectOrCreateChild, positionEllipse, positionRect} from './scene';
+import * as node from './node';
+import * as edge from './edge';
+import * as contextmenu from "./contextmenu"
+
+import * as render from "./render"
+import * as d3 from "d3-selection"
+import * as layout from "./layout"
+ 
+
+export interface EdgeData { 
+  v: string, 
+  w: string, 
+  label: render.RenderMetaedgeInfo 
+};
+
   /**
    * Populate a given annotation container group
    *
@@ -35,24 +51,19 @@ module tf.graph.scene.annotation {
    * @return selection of appended objects
    */
   export function buildGroup(
-      container, annotationData: render.AnnotationList,
-      d: render.RenderNodeInfo, sceneElement) {
+      container:d3.Selection<any,any,any,any>, annotationData: render.AnnotationList,
+      d: render.RenderNodeInfo, sceneElement:any) {
     // Select all children and join with data.
     let annotationGroups =
         container
-            .selectAll(function() {
-              // using d3's selector function
-              // See https://github.com/mbostock/d3/releases/tag/v2.0.0
-              // (It's not listed in the d3 wiki.)
-              return this.childNodes;
-            })
-            .data(annotationData.list, d => { return d.node.name; });
+            .selectAll(function() {return this.childNodes;})
+            .data(annotationData.list, (d:any) => { return d.node.name; });
 
     annotationGroups.enter()
         .append('g')
         .attr('data-name', a => { return a.node.name; })
-        .each(function(a) {
-          let aGroup = d3.select(this);
+        .each(function(a:render.Annotation) {
+          let aGroup:d3.Selection<any,any, null, undefined> = d3.select(this);
 
           // Add annotation to the index in the scene
           sceneElement.addAnnotationGroup(a, d, aGroup);
@@ -66,6 +77,8 @@ module tf.graph.scene.annotation {
           if (metaedge && metaedge.numRefEdges) {
             edgeType += ' ' + Class.Edge.REF_LINE;
           }
+           
+           
           edge.appendEdge(aGroup, a, sceneElement, edgeType);
 
           if (a.annotationType !== render.AnnotationType.ELLIPSIS) {
@@ -78,12 +91,12 @@ module tf.graph.scene.annotation {
         }).merge(annotationGroups)
         .attr(
             'class',
-            a => {
+            (a:any) => {
               return Class.Annotation.GROUP + ' ' +
-                  annotationToClassName(a.annotationType) + ' ' +
+                  annotationToClassName(a.annotationType) + ' ' + 
                   node.nodeClass(a);
             })
-        .each(function(a) {
+        .each(function(a:any) {
           let aGroup = d3.select(this);
           update(aGroup, d, a, sceneElement);
           if (a.annotationType !== render.AnnotationType.ELLIPSIS) {
@@ -109,7 +122,7 @@ function annotationToClassName(annotationType: render.AnnotationType) {
   return (render.AnnotationType[annotationType] || '').toLowerCase() || null;
 }
 
-function buildShape(aGroup, a: render.Annotation) {
+function buildShape(aGroup:any, a: render.Annotation) {
   if (a.annotationType === render.AnnotationType.SUMMARY) {
     let summary = selectOrCreateChild(aGroup, 'use');
     summary
@@ -123,14 +136,15 @@ function buildShape(aGroup, a: render.Annotation) {
   }
 }
 
-function addAnnotationLabelFromNode(aGroup, a: render.Annotation) {
+function addAnnotationLabelFromNode(aGroup:any, a: render.Annotation) {
   let namePath = a.node.name.split('/');
   let text = namePath[namePath.length - 1];
   return addAnnotationLabel(aGroup, text, a, null);
 }
 
 function addAnnotationLabel(
-    aGroup, label: string, a: render.Annotation, additionalClassNames) {
+  aGroup: any, label: string, a: render.Annotation, additionalClassNames: string | null) {
+
   let classNames = Class.Annotation.LABEL;
   if (additionalClassNames) {
     classNames += ' ' + additionalClassNames;
@@ -141,25 +155,26 @@ function addAnnotationLabel(
                        .attr('text-anchor', a.isIn ? 'end' : 'start')
                        .text(label);
 
-  return tf.graph.scene.node.enforceLabelWidth(txtElement, -1);
+  return node.enforceLabelWidth(txtElement, -1);
 }
 
-function addInteraction(selection, d: render.RenderNodeInfo,
-    annotation: render.Annotation, sceneElement) {
+function addInteraction(selection:any, d: render.RenderNodeInfo,
+    annotation: render.Annotation, sceneElement:any) {
   selection
       .on('mouseover',
-          a => {
+          (a:any) => {
             sceneElement.fire(
                 'annotation-highlight',
                 {name: a.node.name, hostName: d.node.name});
           })
       .on('mouseout',
-          a => {
+      (a:any) => {
             sceneElement.fire(
                 'annotation-unhighlight',
                 {name: a.node.name, hostName: d.node.name});
           })
-      .on('click', a => {
+      .on('click', 
+      (a:any) => {
         // Stop this event's propagation so that it isn't also considered a
         // graph-select.
         (<Event>d3.event).stopPropagation();
@@ -183,8 +198,8 @@ function addInteraction(selection, d: render.RenderNodeInfo,
  * @param a annotation node data.
  * @param sceneElement <tf-graph-scene> polymer element.
  */
-function update(aGroup, d: render.RenderNodeInfo, a: render.Annotation,
-    sceneElement) {
+function update(aGroup:any, d: render.RenderNodeInfo, a: render.Annotation,
+    sceneElement:any) {
   let cx = layout.computeCXPositionOfNodeShape(d);
   // Annotations that point to embedded nodes (constants,summary)
   // don't have a render information attached so we don't stylize these.
@@ -226,11 +241,11 @@ function update(aGroup, d: render.RenderNodeInfo, a: render.Annotation,
       d.y + a.dy, a.width, a.height);
 
   // Edge position
-  aGroup.select('path.' + Class.Annotation.EDGE).transition().attr('d', a => {
+  aGroup.select('path.' + Class.Annotation.EDGE).transition().attr('d', (a:any) => {
     // map relative position to absolute position
-    let points = a.points.map(p => { return {x: p.dx + cx, y: p.dy + d.y}; });
+    let points = a.points.map((p:any)=> { return {x: p.dx + cx, y: p.dy + d.y}; });
     return edge.interpolate(points);
   });
 };
 
-} // close module
+

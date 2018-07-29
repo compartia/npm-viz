@@ -1,11 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
-    <title>my first polymer typescript app</title>
+    <title>NPM dependency graph</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="../node_modules/typeface-ibm-plex-mono/index.css">
+    <style>
+        :root {
+            --color-brand: rgb(130, 100, 170);
+
+            --padding: 10px;
+            --padding-2: calc(var(--padding) / 2);
+            --separator-color: rgba(4, 3, 5, 0.1);
+            --accent-color: salmon;
+            --color-accent: salmon;
+            --color-hover: rgb(240, 233, 247);;
+            --font-size-l: 14px;
+            --font-size-m: 12px;
+
+            --color-bg-secondary: hsl(250, 20%, 98%);
+            --color-bg-primary: white;
+
+            --color-tx-secondary: hsl(270, 1%, 43%);
+
+            --mono: 'IBM Plex Mono','Roboto Mono', 'Liberation Mono', Courier!important;
+        }         
+
+       
+        body {
+            padding: 0;
+            margin: 0;
+        }
+    </style>
 </head>
-<>
+
 
 <!--
   Use the webcomponents-loader script which will feature detect which Web
@@ -15,7 +44,7 @@
 -->
 
 <script>
-    (function() {
+    (function () {
         document.addEventListener('WebComponentsReady', function componentsReady() {
             document.removeEventListener('WebComponentsReady', componentsReady, false);
             var script = document.createElement('script');
@@ -35,4 +64,5 @@
 -->
 <npm-deps-graph></npm-deps-graph>
 </body>
+
 </html>

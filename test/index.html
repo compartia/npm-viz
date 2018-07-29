@@ -18,18 +18,26 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   <script src="../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <script src="../bower_components/web-component-tester/browser.js"></script>
+
+  <style>
+    :root {
+      --padding: 10px;
+      --separator-color: rgba(3, 4, 5, 0.1);
+      --accent-color: salmon
+    }
+  </style>
 </head>
 
 <body>
 
   <script>
-    const request =  new XMLHttpRequest();
+    const request = new XMLHttpRequest();
     request.open('GET', 'modules.json', false);
     request.send(null);
     const modules = JSON.parse(request.responseText);
 
-    WCT.loadSuites(modules.map((m)=>{
-        return `build/${m.module}_test.html`
+    WCT.loadSuites(modules.map((m) => {
+      return `build/${m.module}_test.html`
     }));
   </script>
 

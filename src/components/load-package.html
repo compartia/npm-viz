@@ -1,0 +1,40 @@
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html" />
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html" />
+<link rel="import" href="../../bower_components/paper-button/paper-button.html" />
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+ 
+
+<dom-module id="load-package"> 
+    <template>
+        <style>
+            .row {
+                @apply --layout-horizontal;
+            }
+            .note{
+                padding: var(--padding);
+            }
+            #name{
+                margin-right: var(--padding);
+                min-width: 200px;
+            }
+        </style>
+
+
+        <paper-input style="min-width: 400px" label="enter package-lock.json URL" value="{{packageLockUrl}}"></paper-input>
+
+        <div class="note">or get from NPM registry</div>
+
+        <div class="row">
+            <paper-input id="name" label="NPM package name" value="{{packageName}}"></paper-input>
+            <div class="row">
+                <paper-input id="version" label="NPM package version" value="{{packageVersion}}"></paper-input>
+                <!-- <paper-autocomplete-suggestions for="version" source="[[versions]]"></paper-autocomplete-suggestions>
+                <paper-button raised>Load versions...</paper-button> -->
+            </div>
+
+        </div>
+
+
+        <paper-button raised on-tap="loadGraph">Load</paper-button>
+    </template>
+</dom-module>
