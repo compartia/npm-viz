@@ -4,6 +4,7 @@ NPM is the package manager for JavaScript.
 This project allows you to visualize the dependencies of NPM modules in the form of 2D (and 3D) graph;
 
 ## Modules
+
 ### Client
 
 ![Open](docs/file-open.gif)
@@ -15,17 +16,26 @@ This project allows you to visualize the dependencies of NPM modules in the form
 ### Server
 
 Basicaly the server is just a proxy to http://registry.npmjs.org.
-Because of CORS restictions, we cannot call their API directly from the client.
-
-The primary purpose of server is to forward all requests to http://registry.npmjs.org
-All the responses are cached locally.
-
-The server is also responsible for building `package-lock.json`
+Because of CORS restictions, we cannot call their API directly from the client. The primary purpose of server is to forward all requests to http://registry.npmjs.org. 
+All the responses are cached.
 
 
 ## Development
 
-## command
+1. Run the server
+
+`sh tts.sh ./server/server` 
+
+By default, the server listen to the port 5000.
+
+2. Run the client in dev. mode
+
+`npm run demo` 
+
+
+
+
+### Other commands
 
 `npm install`: install project dependency.
 
@@ -42,12 +52,3 @@ The server is also responsible for building `package-lock.json`
 `npm run doc` generate project documentation with typedoc.
 
 
-### dev mode
-
-`npm run demo` run prj in dev mode
-
-## server
-
-
-
-`sh tts.sh ./server/server` run server 
