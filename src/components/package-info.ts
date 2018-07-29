@@ -114,7 +114,7 @@ export class PackageInfo extends Polymer.Element {
     }
 
     public getSlectedNodeUrl(selectedNode: Graph.Node): string {
-        if (selectedNode)
+        if (selectedNode && selectedNode.nodeAttributes)
             return `${REGISTRY_URL}/package/${selectedNode.nodeAttributes.package}/${selectedNode.nodeAttributes.version}`;
     }
 

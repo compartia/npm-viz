@@ -11,7 +11,6 @@ import '../../components/settings'
 
 import * as render from '../tf_graph_common/render';
 import * as graph from '../tf_graph_common/graph';
-import * as layout from '../tf_graph_common/layout';
 import * as util from '../tf_graph_common/util';
 import * as scene from '../tf_graph_common/scene';
 import * as hierarchy from '../tf_graph_common/hierarchy';
@@ -470,17 +469,15 @@ export class TfGraphElement extends Polymer.Element {
   }
 
   private _onLoadGraphEvent({detail}){
-    // console.error(event.detail);
-    this.packageLockUrl = detail.url;//  `http://localhost:5000/package-lock/${detail.name}/${detail.version}`;
+    this.packageLockUrl = detail.url; 
   }
 
   public ready() {
     super.ready();
  
-    // (<HTMLElement>this.$.infoPanel).on
+ 
     _.toPairs(TfGraphElement.listeners).forEach(pair => {
       let listener = (e) => {
-        //console.error(e);
         this[pair[1]](e);
       }
        

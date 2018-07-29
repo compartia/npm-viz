@@ -13,7 +13,7 @@ export class DependencyLink extends Polymer.Element {
     @property({ type: String, notify: true, observer: 'packageNameChanged' })
     packageVersion: string;
 
-    @property({ type: String, notify: true, observer: 'urlChanged' })
+    @property({ type: String, notify: true })
     packageLockUrl: string;
 
     @property({ type: String })
@@ -22,12 +22,7 @@ export class DependencyLink extends Polymer.Element {
     private _ignoreUpdates = false;
 
     public urlChanged(c) {
-        this._ignoreUpdates = true;
 
-        // this.packageName="";
-        // this.packageVersion="";
-
-        this._ignoreUpdates = false;
     }
 
     public packageNameChanged(c) {
@@ -36,7 +31,6 @@ export class DependencyLink extends Polymer.Element {
     }
 
     public loadGraph(): void {
-        // this.fire
         let detail = {
             name: this.packageName,
             version: this.packageVersion,
