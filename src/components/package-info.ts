@@ -34,7 +34,7 @@ export class PackageInfo extends Polymer.Element {
     @property({ type: Object, observer: 'onSelectedNode', notify: true })
     selectedNode: any;
 
-    @property({ type: Object,  notify: true })
+    @property({ type: Object, notify: true })
     selectedGraphNode: Graph.Node
 
     @property({ type: Object, notify: true })
@@ -49,7 +49,7 @@ export class PackageInfo extends Polymer.Element {
     progress: any;
 
     @property({ type: String })
-    packageName: any;     
+    packageName: any;
 
     @property({ type: String })
     packageVersion: any;
@@ -67,11 +67,11 @@ export class PackageInfo extends Polymer.Element {
     };
 
     public loadGraph(): void {
-        // this.fire
+
         let detail = {
             name: this.jsonLoaded.name,
             version: this.jsonLoaded.version,
-            url: `http://localhost:5000/package-lock/${this.jsonLoaded.name}/${this.jsonLoaded.version}`
+            url: `${REGISTRY_URL}/package-lock/${this.jsonLoaded.name}/${this.jsonLoaded.version}`
         };
         console.error("firing");
         this.dispatchEvent(new CustomEvent("load-graph", { bubbles: true, detail: detail }));
