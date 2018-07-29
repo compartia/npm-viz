@@ -12,6 +12,11 @@ This project allows you to visualize the dependencies of NPM modules in the form
 
 ![Graph 2D](docs/2d.gif)
 
+
+![screenshot 1](docs/graph1.png)
+
+![screenshot 2](docs/graph2.png)
+
 ### Server
 
 Basicaly the server is just a proxy to http://registry.npmjs.org.
