@@ -4,6 +4,7 @@ import './package-info.html';
 import { Hierarchy } from "../graph/tf_graph_common/hierarchy";
 import * as Graph from "../graph/tf_graph_common/graph";
 import * as _ from 'lodash';
+import { REGISTRY_URL } from "../consts";
 
 
 @customElement('dependency-link')
@@ -33,22 +34,22 @@ export class PackageInfo extends Polymer.Element {
     @property({ type: Object, observer: 'onSelectedNode', notify: true })
     selectedNode: any;
 
+    @property({ type: Object,  notify: true })
+    selectedGraphNode: Graph.Node
+
     @property({ type: Object, notify: true })
     highlightedNode: String;
 
     @property({
         type: Object
     })
-    graphHierarchy: Hierarchy; 
+    graphHierarchy: Hierarchy;
 
     @property({ type: Object, notify: true })
     progress: any;
 
     @property({ type: String })
-    packageName: any;
-
-    @property({ type: Object })
-    slectedNode: Graph.Node
+    packageName: any;     
 
     @property({ type: String })
     packageVersion: any;
@@ -65,7 +66,7 @@ export class PackageInfo extends Polymer.Element {
         'node-list-item-mouseout': '_nodeListItemMouseout'
     };
 
-    public loadGraph() :void{
+    public loadGraph(): void {
         // this.fire
         let detail = {
             name: this.jsonLoaded.name,
@@ -92,7 +93,7 @@ export class PackageInfo extends Polymer.Element {
 
         let node = this.graphHierarchy.node(nodeName);
 
-        this.set("slectedNode", node);
+        this.set("selectedGraphNode", node);
         console.log(node);
 
         if (node && !node.isGroupNode) {
@@ -111,6 +112,12 @@ export class PackageInfo extends Polymer.Element {
     private onJsonLoaded(e) {
         console.log(this.jsonLoaded);
     }
+
+    public getSlectedNodeUrl(selectedNode: Graph.Node): string {
+        if (selectedNode)
+            return `${REGISTRY_URL}/package/${selectedNode.nodeAttributes.package}/${selectedNode.nodeAttributes.version}`;
+    }
+
 
     public ready() {
         super.ready();

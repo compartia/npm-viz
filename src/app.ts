@@ -76,8 +76,7 @@ export class NpmDepsGraph extends Polymer.Element {
   }
 
   private _onLoadGraphEvent({detail}){
-    // console.error(event.detail);
-    this._packageLockUrl = detail.url;//  `http://localhost:5000/package-lock/${detail.name}/${detail.version}`;
+    this._packageLockUrl = detail.url;
   }
 }
 
