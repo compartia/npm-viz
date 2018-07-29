@@ -60,6 +60,10 @@ export class NpmDepsGraph extends Polymer.Element {
     }
   }
 
+  private _isNotComplete(progress): boolean {
+    return progress.value < 100;
+  }
+
   private _graphUpdated(slimGraph: SlimGraph) {
     const tracker = getTracker(this.$.loader);
     const hierarchyTracker = getSubtaskTracker(
@@ -75,7 +79,7 @@ export class NpmDepsGraph extends Polymer.Element {
       });
   }
 
-  private _onLoadGraphEvent({detail}){
+  private _onLoadGraphEvent({ detail }) {
     this._packageLockUrl = detail.url;
   }
 }

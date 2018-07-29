@@ -19,7 +19,12 @@ import { PackageLockGraph } from '../npmjson';
 
 
 @customElement('tf-graph-loader')
-export class GraphScene extends Polymer.Element {   
+export class GraphScene extends Polymer.Element {
+
+
+    @property({ type: String, observer: "_onPackageLockUrlChanged" })
+    packageLockUrl: string;
+
     /**
      * @type {{value: number, msg: string}}
      *
@@ -27,10 +32,11 @@ export class GraphScene extends Polymer.Element {
      * for the progress bar and the displayed message.
      */
     @property({ type: Object, notify: true })
-    progress: any;
+    progress: ProgressTracker;
 
     @property({ type: Array })
     datasets: Array<any> = ['set 1'];
+
 
     @property({ type: Number })
     selectedDataset: number = 0;
@@ -51,12 +57,12 @@ export class GraphScene extends Polymer.Element {
     outGraphHierarchy: hierarchy.Hierarchy = null;
 
     @property({ type: Object, notify: true, readOnly: true })
-    outGraph: GraphModule.SlimGraph; 
+    outGraph: GraphModule.SlimGraph;
 
     @property({ type: Object, notify: true, readOnly: true })
     outHierarchyParams: any;
 
-    @property({ type: Object, notify: true})
+    @property({ type: Object, notify: true })
     jsonLoaded: any;
 
     /** @type {Object} */
@@ -72,44 +78,49 @@ export class GraphScene extends Polymer.Element {
 
 
     private _selectedDatasetChanged(jsonLoaded, overridingHierarchyParams) {
+        this.set('progress', { value: 0, msg: "loading package info", indeterminate: false });
         this._parseAndConstructHierarchicalGraph(jsonLoaded, overridingHierarchyParams);
     };
 
 
-    private loadGraphData(json:any, tracker: ProgressTracker): Promise<GraphDef> {
-         
-        if(!json){
-            return Promise.resolve(<GraphDef>{node: []});
+    private loadGraphData(json: any, tracker: ProgressTracker): Promise<GraphDef> {
+
+        if (!json) {
+            return Promise.resolve(<GraphDef>{ node: [] });
         }
-    
+
 
         return new Promise<GraphDef>(function (resolve, reject) {
 
-            let plg= new PackageLockGraph(json);
-            
-             
+            let plg = new PackageLockGraph(json);
+
+
             tracker.updateProgress(100);
             resolve(plg);
 
         });
     }
 
-    public onFileLoaded(file:any){
+    public onFileLoaded(file: any) {
         console.log(file);
     }
 
+    private _onPackageLockUrlChanged() {
+        this.set('progress', { value: 0, msg: "loading package info", indeterminate: true });
+    }
+
     private _parseAndConstructHierarchicalGraph(jsonLoaded, overridingHierarchyParams) {
-        
+
         // Reset the progress bar to 0.
         this.set('progress', {
             value: 0,
-            msg: '_parseAndConstructHierarchicalGraph', 
-            name:"n1"
+            msg: '_parseAndConstructHierarchicalGraph',
+            name: "n1"
         });
 
         const _tracker = util.getTracker(this);
-        
-        
+
+
         var hierarchyParams: hierarchy.HierarchyParams = {
             verifyTemplate: true,
             rankDirection: 'LR',
@@ -145,7 +156,7 @@ export class GraphScene extends Polymer.Element {
                 // reference edges. "Assign 0" indicates that the first input to
                 // an OpNode with operation type "Assign" is a reference edge.
                 var refEdges = {};
-               
+
                 var buildParams = {
                     enableEmbedding: true,
                     inEmbeddingTypes: ['Const'],
@@ -158,7 +169,7 @@ export class GraphScene extends Polymer.Element {
             .then((graph: SlimGraph) => {
                 console.log("graph=" + graph);
                 // Populate compatibile field of OpNode based on whitelist
- 
+
                 (this as any)._setOutGraph(graph);
 
                 const _hierarchyTracker = util.getSubtaskTracker(_tracker, 50, 'Namespace hierarchy');
@@ -183,6 +194,6 @@ export class GraphScene extends Polymer.Element {
 
 
 
-     
+
 
 }
