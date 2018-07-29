@@ -87,7 +87,6 @@
       <div class="vertical">
         
         
-
         <vaadin-split-layout orientation="horizontal" class="split">
           <div class="splitter-content-left">
             <graph-scene id="scene"
@@ -96,7 +95,7 @@
                 selected-node="{{selectedNode}}"
                 selected-edge="{{selectedEdge}}"
                 color-by="[[colorBy]]"
-                progress="[[progress]]"
+                progress="{{progress}}"
                 node-context-menu-items="[[nodeContextMenuItems]]"
                 node-names-to-health-pills="[[nodeNamesToHealthPills]]"
                 health-pill-step-index="{{healthPillStepIndex}}"
@@ -107,7 +106,7 @@
               msg=[[progress.msg]] -->
             <package-info 
               id="infoPanel"
-              progress="[[progress]]"
+              progress="{{progress}}"
               on-load-graph="_onLoadGraphEvent"
               selected-node="{{selectedNode}}"
               highlighted-node="{{highlightedNode}}"
