@@ -13,7 +13,7 @@
                 display: inline-block;
             }
 
-            .mono{
+            .mono {
                 font-family: var(--mono);
             }
 
@@ -44,7 +44,6 @@
                 padding: var(--padding);
             }
         </style>
-        <!-- <iron-request id="apiRequest"></iron-request> -->
 
         <iron-ajax id="apiRequest" url="http://localhost:5000/package/[[slectedNode.nodeAttributes.package]]/[[slectedNode.nodeAttributes.version]]"
             handle-as="json" last-response="{{jsonLoaded}}" method="GET" debounce-duration="300"></iron-ajax>
@@ -53,20 +52,20 @@
 
 
             <section class="padding">
-                <!-- [[selectedNode.name]] Package: [[package.nodeAttributes.package]]/[[package.version]] -->
                 <h2 class="mono"> [[jsonLoaded.name]] [[jsonLoaded.version]]</h2>
 
- 
-                <!-- <template is="dom-repeat" items="[[jsonLoaded.dependencies]]">
-                                    <div class="keyword">[[item]]</div>
-                                </template> -->
+                <paper-button title="load [[jsonLoaded.name]] package-lock.json" raised on-tap="loadGraph">Load graph</paper-button>
+
+
             </section>
             <paper-expansion-panel class="panel-settings" header="Details" opened>
-                    [[jsonLoaded.description]]<br>
-                    [[jsonLoaded.repository.url]]
+                [[jsonLoaded.description]]
+                <br> [[jsonLoaded.repository.url]]
 
-                    <br>
-                       <!-- [[jsonLoaded.keywords]] -->
+
+
+                <br>
+                <!-- [[jsonLoaded.keywords]] -->
                 <template is="dom-repeat" items="[[jsonLoaded.keywords]]">
                     <div class="keyword">[[item]]</div>
                 </template>
@@ -108,10 +107,7 @@
                 background: var(--color-hover)
             }
 
-    
-           
-
-            .mono{
+            .mono {
                 font-family: var(--mono);
             }
 

@@ -1,6 +1,23 @@
-# My-App
+# NPM packages dependency browser.
 
-api example: http://registry.npmjs.org/acorn/5.7.1
+NPM is the package manager for JavaScript. 
+This project allows you to visualize the dependencies of NPM modules in the form of 2D (and 3D) graph;
+
+## Modules
+### Client
+
+### Server
+
+Basicaly the server is just a proxy to http://registry.npmjs.org.
+Because of CORS restictions, we cannot call their API directly from the client.
+
+The primary purpose of server is to forward all requests to http://registry.npmjs.org
+All the responses are cached locally.
+
+The server is also responsible for building `package-lock.json`
+
+
+## Development
 
 ## command
 
@@ -23,6 +40,8 @@ api example: http://registry.npmjs.org/acorn/5.7.1
 
 `npm run demo` run prj in dev mode
 
-##server
+## server
+
+
 
 `sh tts.sh ./server/server` run server 
