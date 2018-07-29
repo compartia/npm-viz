@@ -10,3 +10,5 @@
  
 server/public/packages/**
 demo/video/**
+
+/build/
