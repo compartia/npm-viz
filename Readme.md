@@ -3,9 +3,8 @@
 NPM is the package manager for JavaScript. 
 This project allows you to visualize the dependencies of NPM modules in the form of 2D (and 3D) graph;
 
-## Modules
 
-### Client
+### Client app
 
 ![Open](docs/file-open.gif)
 
