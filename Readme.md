@@ -1,5 +1,9 @@
 # NPM packages dependency browser.
 
+
+[![Build Status](https://travis-ci.com/compartia/npm-viz.svg?branch=master)](https://travis-ci.com/compartia/npm-viz)
+
+
 NPM is the package manager for JavaScript. 
 This project allows you to visualize the dependencies of NPM modules in the form of 2D (and 3D) graph;
 
