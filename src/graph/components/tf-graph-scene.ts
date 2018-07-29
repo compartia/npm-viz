@@ -363,7 +363,7 @@ export class GraphScene extends Polymer.Element {
             layout.PARAMS.subscene.meta.labelHeight);
     };
 
-    public attached() {
+    public connectedCallback() {
         this.set('_isAttached', true);
     };
 
