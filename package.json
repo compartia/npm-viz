@@ -3,25 +3,20 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    "start": "node ./server/server.js",
     "postinstall": "bower install",
-    "build": "webpack --config webpack.config.js",
+    "build": "webpack --config webpack.config.prod.js",
     "tsc": "tsc",
     "demo": "webpack-dev-server --config webpack.config.js",
-    "test": "wct --skip-plugin=local --configFile wct.conf.js",
-    "test:persist": "wct --skip-plugin=headless -p --configFile wct.conf.js",
-    "build:test:watch": "webpack --config webpack.test.js --watch",
-    "pretest": "webpack --config webpack.test.js",
     "doc": "typedoc --out  doc/ "
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Artem Zaborskiy",
+  "license": "MIT",
   "dependencies": {
     "ozone-api-request": "^3.0.0",
     "reflect-metadata": "^0.1.12",
-    "three": "^0.94.0",
-     
-    "three-full": "^8.0.0"
-    
+    "three": "^0.94.0",     
+    "three-full": "^8.0.0"    
   },
   "devDependencies": {
     "@polymer/gen-closure-declarations": "^0.4.0",
