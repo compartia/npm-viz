@@ -9,7 +9,7 @@ import { Vector3 } from 'three';
 
 export class Lib {
     public static lineColors = [
-        1, 0.2, 0.2, 
+        1, 0.2, 0.2,
         0, 0, 0.5
     ];
 
@@ -266,11 +266,9 @@ export class P3dScene extends SimpleScene implements EdgesCollection, NodesColle
             + backgroundColor.b + "," + backgroundColor.a + ")";
         context.strokeStyle = "none";
 
-        // this.roundRect(context, 0, 0 + mh, canvas.width, fontsize * 1.8, 5);
         this.roundRect(context, 0, 0, canvas.width, canvas.height, 5);
 
-        // text color
-        // context.translate(0,-mh);
+        // text color         
         context.fillStyle = "rgba(0, 0, 0, 1.0)";
         context.fillText(message, (canvas.width - textWidth) / 2, mh + fontsize * 0.5);
 
