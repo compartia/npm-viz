@@ -112,13 +112,19 @@
         value="[[progress.value]]"
         indeterminate="[[progress.indeterminate]]"></paper-progress>
 
+      <!-- HEADER -->
       <div class="header">
         <div class="header-left">
           <paper-menu-button dynamic-align no-animations close-on-activate>
-            <paper-icon-button slot="dropdown-trigger" icon="icons:open-in-browser" alt="open package-lock.json"></paper-icon-button>
+            <paper-icon-button slot="dropdown-trigger" 
+              icon="icons:open-in-browser" alt="open package-lock.json"></paper-icon-button>
             <div slot="dropdown-content" class="drop-down-contents">
               <h3>Load dependencies graph</h3>
-              <load-package url="{{packageLockUrl}}"></load-package>
+              <load-package 
+                  url="{{packageLockUrl}}" 
+                  on-load-graph="_onLoadGraphEvent"
+                  package-name="{{packageInfo.name}}"
+                  package-version="{{packageInfo.version}}"></load-package>
             </div>
           </paper-menu-button>
         </div>

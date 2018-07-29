@@ -70,6 +70,7 @@ export class PackageInfo extends Polymer.Element {
         let detail = {
             name: this.jsonLoaded.name,
             version: this.jsonLoaded.version,
+            url: `http://localhost:5000/package-lock/${this.jsonLoaded.name}/${this.jsonLoaded.version}`
         };
         console.error("firing");
         this.dispatchEvent(new CustomEvent("load-graph", { bubbles: true, detail: detail }));

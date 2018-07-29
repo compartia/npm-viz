@@ -1,3 +1,5 @@
+ 
+ 
 import * as d3 from 'd3';
 import "polymer/polymer.html";
 import { customElement, property } from 'taktik-polymer-typescript';
@@ -5,6 +7,7 @@ import './tf-graph.html'
 import './tf-graph-scene'
 import '../../components/package-info'
 import '../../components/settings'
+
 
 import * as render from '../tf_graph_common/render';
 import * as graph from '../tf_graph_common/graph';
@@ -15,6 +18,7 @@ import * as hierarchy from '../tf_graph_common/hierarchy';
 import { joinAndAggregateStats, Hierarchy } from "../tf_graph_common/hierarchy";
 import * as _ from 'lodash';
 import { EdgeData } from '../tf_graph_common/annotation';
+import { REGISTRY_URL } from '../../consts';
 
 
 
@@ -34,7 +38,7 @@ export class TfGraphElement extends Polymer.Element {
   renderHierarchy: render.RenderGraphInfo;
 
   @property({ type: String, notify: true })
-  packageLockUrl:string = 'http://localhost:5000/package-lock/is-primitive/2.0.0';
+  packageLockUrl:string =  REGISTRY_URL +'/package-lock/is-primitive/2.0.0';
 
   @property({ type: Object })
   stats: Object;
@@ -467,7 +471,7 @@ export class TfGraphElement extends Polymer.Element {
 
   private _onLoadGraphEvent({detail}){
     // console.error(event.detail);
-    this.packageLockUrl = `http://localhost:5000/package-lock/${detail.name}/${detail.version}`;
+    this.packageLockUrl = detail.url;//  `http://localhost:5000/package-lock/${detail.name}/${detail.version}`;
   }
 
   public ready() {

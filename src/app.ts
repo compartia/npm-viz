@@ -20,6 +20,9 @@ export class NpmDepsGraph extends Polymer.Element {
   @property({ type: String })
   _packageLockContents: string;
 
+  @property({ type: String })
+  _packageLockUrl: string;
+
   @property({ type: Object, notify: true })
   progress: any;
 
@@ -70,6 +73,11 @@ export class NpmDepsGraph extends Polymer.Element {
         this.$.graph.set('basicGraph', slimGraph);
         this.$.graph.set('graphHierarchy', graphHierarchy);
       });
+  }
+
+  private _onLoadGraphEvent({detail}){
+    // console.error(event.detail);
+    this._packageLockUrl = detail.url;//  `http://localhost:5000/package-lock/${detail.name}/${detail.version}`;
   }
 }
 
