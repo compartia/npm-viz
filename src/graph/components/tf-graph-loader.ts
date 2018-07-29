@@ -7,12 +7,11 @@ import { ProgressTracker } from '../tf_graph_common/common';
 import * as GraphModule from '../tf_graph_common/graph';
 import { SlimGraph } from '../tf_graph_common/graph';
 import * as hierarchy from '../tf_graph_common/hierarchy';
-import { GraphDef, NodeDef } from '../tf_graph_common/proto';
+import { GraphDef } from '../tf_graph_common/proto';
 import * as util from '../tf_graph_common/util';
 import './tf-graph-minimap';
 
 import './tf-graph-loader.html';
-import { json } from 'd3';
 import { PackageLockGraph } from '../npmjson';
 
 
@@ -20,11 +19,7 @@ import { PackageLockGraph } from '../npmjson';
 
 
 @customElement('tf-graph-loader')
-export class GraphScene extends Polymer.Element {
-    
-    @property({ type: String })
-    packageLockUrl:string;
-
+export class GraphScene extends Polymer.Element {   
     /**
      * @type {{value: number, msg: string}}
      *
